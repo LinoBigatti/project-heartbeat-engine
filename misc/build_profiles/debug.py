@@ -1,0 +1,7 @@
+custom_modules="../modules"
+sdl="yes"
+sdl_path="/home/eirexe/repos/godot-ph4/bin/sdl"
+ffmpeg_path="/home/eirexe/repos/godot-ph4/bin/ffmpeg/ffmpeg-master-latest-linux64-lgpl-godot"
+tests="yes"
+use_breakpad="yes"
+scu_build="yes"
