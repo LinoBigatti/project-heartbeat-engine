@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/EIRTeam/shinobu.git
+	branch = ph
+	commit = 95ed8647e7b36346d1e207ff8e1e1deac97ae22a
+	parent = 35e3083d97b04c423e18c328ef66e127283b5acb
+	method = merge
+	cmdver = 0.4.6
