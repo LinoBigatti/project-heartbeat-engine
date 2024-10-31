@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/EIRTeam/EIRTeam.Steamworks.git
+	branch = master
+	commit = b84bdeae616f773cf480673c692f4d128ac1efd0
+	parent = ec9bd417186b286eaea758c5a7680f8a20b62c1c
+	method = merge
+	cmdver = 0.4.6
