@@ -31,6 +31,7 @@
 #ifndef JOYPAD_WINDOWS_H
 #define JOYPAD_WINDOWS_H
 
+#include "core/os/mutex.h"
 #include "os_windows.h"
 
 #define DIRECTINPUT_VERSION 0x0800

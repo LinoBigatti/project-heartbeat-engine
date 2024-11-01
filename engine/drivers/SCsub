@@ -50,7 +50,8 @@ if env["metal"]:
     SConscript("metal/SCsub")
 
 # Input drivers
-SConscript("sdl/SCsub")
+if env["sdl"]:
+    SConscript("sdl/SCsub")
 
 # Core dependencies
 SConscript("png/SCsub")
