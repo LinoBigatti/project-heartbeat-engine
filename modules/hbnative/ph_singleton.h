@@ -1,6 +1,7 @@
 #ifndef PH_SINGLETON_H
 #define PH_SINGLETON_H
 
+#include "core/variant/variant.h"
 #include "modules/vorbis/audio_stream_ogg_vorbis.h"
 #include "process/process.h"
 #include "scene/main/node.h"
@@ -29,6 +30,7 @@ public:
 	static String get_sdl_device_guid(int p_joy_device_idx);
 	bool get_blur_controls_enabled() const;
 	void set_blur_controls_enabled(bool p_blur_controls_enabled);
+	Array get_string_from_utf8_checked(const PackedByteArray &p_arr) const;
 	PHNative();
 };
 

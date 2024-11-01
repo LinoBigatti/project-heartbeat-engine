@@ -179,6 +179,7 @@ void PHNative::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_blur_controls_enabled"), &PHNative::get_blur_controls_enabled);
 	ClassDB::bind_method(D_METHOD("set_blur_controls_enabled", "blur_controls_enabled"), &PHNative::set_blur_controls_enabled);
+	ClassDB::bind_method(D_METHOD("get_string_from_utf8_checked", "byte_array"), &PHNative::get_string_from_utf8_checked);
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "blur_controls_enabled"), "set_blur_controls_enabled", "get_blur_controls_enabled");
 
@@ -195,4 +196,20 @@ bool PHNative::get_blur_controls_enabled() const {
 void PHNative::set_blur_controls_enabled(bool p_blur_controls_enabled) {
 	blur_controls_enabled = p_blur_controls_enabled;
 	emit_signal(SNAME("blur_controls_enabled_changed"));
+}
+
+Array PHNative::get_string_from_utf8_checked(const PackedByteArray &p_arr) const {
+		String s;
+		bool conversion_ok = true;
+		if (p_arr.size() > 0) {
+			const uint8_t *r = p_arr.ptr();
+			conversion_ok = s.parse_utf8((const char *)r, p_arr.size()) == OK;
+		}
+
+		Array a;
+
+		a.append(s);
+		a.append(conversion_ok);
+
+		return a;
 }
