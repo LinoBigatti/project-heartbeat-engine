@@ -47,6 +47,7 @@
 #endif
 
 #include "core/input/default_controller_mappings.h"
+#include "core/os/time.h"
 #include "thirdparty/sdl_headers/SDL.h"
 #include <iterator>
 
