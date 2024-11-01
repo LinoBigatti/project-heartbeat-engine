@@ -333,12 +333,14 @@ void RasterizerCanvasGLES3::canvas_render_items(RID p_to_render_target, Item *p_
 		screen_transform.translate_local(-(ssize.width / 2.0f), -(ssize.height / 2.0f), 0.0f);
 		screen_transform.scale(Vector3(2.0f / ssize.width, y_scale / ssize.height, 1.0f));
 
-		if (!p_canvas_3d_info->use_3d) {
-			_update_transform_to_mat4(screen_transform, state_buffer.screen_transform);
-			_update_transform_2d_to_mat4(p_canvas_transform, state_buffer.canvas_transform);
-		} else {
-			_update_transform_to_mat4(p_canvas_3d_info->screen_transform_3d, state_buffer.screen_transform);
-			_update_transform_to_mat4(p_canvas_3d_info->canvas_transform_3d, state_buffer.canvas_transform);
+		_update_transform_to_mat4(screen_transform, state_buffer.screen_transform);
+		state_buffer.use_3d_transform = p_canvas_3d_info->use_3d;
+		_update_transform_2d_to_mat4(p_canvas_transform, state_buffer.canvas_transform);
+		_update_transform_2d_to_mat4(p_canvas_transform.affine_inverse(), state_buffer.canvas_transform_inverse);
+
+		if (p_canvas_3d_info->use_3d) {
+			_update_transform_to_mat4(p_canvas_3d_info->screen_transform_3d, state_buffer.screen_transform_3d);
+			_update_transform_to_mat4(p_canvas_3d_info->canvas_transform_3d, state_buffer.canvas_transform_3d);
 		}
 
 		Transform2D normal_transform = p_canvas_transform;
@@ -481,7 +483,7 @@ void RasterizerCanvasGLES3::canvas_render_items(RID p_to_render_target, Item *p_
 				item_count = 0;
 
 				if (ci->canvas_group_owner->canvas_group->mode != RS::CANVAS_GROUP_MODE_TRANSPARENT) {
-					Rect2i group_rect = ci->canvas_group_owner->global_rect_cache;
+					Rect2i group_rect = ci->canvas_group_owner->global_rect_cache_3d;
 					texture_storage->render_target_copy_to_back_buffer(p_to_render_target, group_rect, false);
 					if (ci->canvas_group_owner->canvas_group->mode == RS::CANVAS_GROUP_MODE_CLIP_AND_DRAW) {
 						ci->canvas_group_owner->use_canvas_group = false;
@@ -702,6 +704,7 @@ void RasterizerCanvasGLES3::_render_items(RID p_to_render_target, int p_item_cou
 
 	glDisable(GL_SCISSOR_TEST);
 	glDisable(GL_STENCIL_TEST);
+	glClear(GL_DEPTH_BUFFER_BIT);
 	current_clip = nullptr;
 
 	GLES3::CanvasShaderData::BlendMode last_blend_mode = GLES3::CanvasShaderData::BLEND_MODE_MIX;

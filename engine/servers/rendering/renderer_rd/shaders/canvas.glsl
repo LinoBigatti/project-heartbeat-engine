@@ -225,7 +225,7 @@ void main() {
 	uv_interp = uv;
 
 	if (canvas_data.use_3d_transform) {
-		gl_Position = canvas_data.projection_matrix * canvas_data.view_matrix * canvas_data.canvas_transform * canvas_data.screen_transform * vec4(vertex, 0.0, 1.0);
+		gl_Position = canvas_data.projection_matrix * canvas_data.view_matrix * canvas_data.canvas_transform_3d * canvas_data.screen_transform_3d * vec4(vertex, 0.0, 1.0);
 	} else {
 		gl_Position = canvas_data.screen_transform * vec4(vertex, 0.0, 1.0);
 	}
@@ -581,6 +581,12 @@ void main() {
 	vec2 screen_uv = gl_FragCoord.xy * canvas_data.screen_pixel_size;
 #else
 	vec2 screen_uv = vec2(0.0);
+#endif
+
+#if defined(CANVAS_COORD_USED)
+	vec2 canvas_coord = (canvas_data.canvas_transform_inverse * vec4(vertex_interp, 0.0, 1.0)).xy;
+#else
+	vec2 canvas_coord = vec2(0.0);
 #endif
 
 	vec3 light_vertex = vec3(vertex, 0.0);

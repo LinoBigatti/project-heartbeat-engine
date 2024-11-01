@@ -172,7 +172,10 @@ public:
 
 	struct StateBuffer {
 		float canvas_transform[16];
+		float canvas_transform_3d[16];
+		float canvas_transform_inverse[16];
 		float screen_transform[16];
+		float screen_transform_3d[16];
 		float projection_matrix[16];
 		float view_matrix[16];
 		float canvas_normal_transform[16];
@@ -188,7 +191,7 @@ public:
 
 		uint32_t directional_light_count;
 		float tex_to_sdf;
-		uint32_t pad1;
+		uint32_t use_3d_transform;
 		uint32_t pad2;
 	};
 

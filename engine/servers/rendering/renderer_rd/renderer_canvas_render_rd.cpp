@@ -707,12 +707,12 @@ void RendererCanvasRenderRD::canvas_render_items(RID p_to_render_target, Item *p
 		screen_transform.translate_local(-(ssize.width / 2.0f), -(ssize.height / 2.0f), 0.0f);
 		screen_transform.scale(Vector3(2.0f / ssize.width, 2.0f / ssize.height, 1.0f));
 
-		if (!p_3d_info->use_3d) {
-			_update_transform_to_mat4(screen_transform, state_buffer.screen_transform);
-			_update_transform_2d_to_mat4(p_canvas_transform, state_buffer.canvas_transform);
-		} else {
-			_update_transform_to_mat4(p_3d_info->screen_transform_3d, state_buffer.screen_transform);
-			_update_transform_to_mat4(p_3d_info->canvas_transform_3d, state_buffer.canvas_transform);
+		_update_transform_to_mat4(screen_transform, state_buffer.screen_transform);
+		_update_transform_2d_to_mat4(p_canvas_transform, state_buffer.canvas_transform);
+		_update_transform_2d_to_mat4(p_canvas_transform.affine_inverse(), state_buffer.canvas_transform_inverse);
+		if (p_3d_info->use_3d) {
+			_update_transform_to_mat4(p_3d_info->screen_transform_3d, state_buffer.screen_transform_3d);
+			_update_transform_to_mat4(p_3d_info->canvas_transform_3d, state_buffer.canvas_transform_3d);
 		}
 
 		Transform2D normal_transform = p_canvas_transform;
@@ -1774,6 +1774,7 @@ RendererCanvasRenderRD::RendererCanvasRenderRD() {
 		actions.renames["SPECULAR_SHININESS_TEXTURE"] = "specular_texture";
 		actions.renames["SPECULAR_SHININESS"] = "specular_shininess";
 		actions.renames["SCREEN_UV"] = "screen_uv";
+		actions.renames["CANVAS_COORD"] = "canvas_coord";
 		actions.renames["SCREEN_PIXEL_SIZE"] = "canvas_data.screen_pixel_size";
 		actions.renames["FRAGCOORD"] = "gl_FragCoord";
 		actions.renames["POINT_COORD"] = "gl_PointCoord";
@@ -1798,6 +1799,7 @@ RendererCanvasRenderRD::RendererCanvasRenderRD() {
 
 		actions.usage_defines["COLOR"] = "#define COLOR_USED\n";
 		actions.usage_defines["SCREEN_UV"] = "#define SCREEN_UV_USED\n";
+		actions.usage_defines["CANVAS_COORD"] = "#define CANVAS_COORD_USED\n";
 		actions.usage_defines["SCREEN_PIXEL_SIZE"] = "@SCREEN_UV";
 		actions.usage_defines["NORMAL"] = "#define NORMAL_USED\n";
 		actions.usage_defines["NORMAL_MAP"] = "#define NORMAL_MAP_USED\n";
