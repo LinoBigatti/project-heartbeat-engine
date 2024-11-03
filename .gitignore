@@ -24,3 +24,4 @@ venv
 # Python generated
 __pycache__/
 *.pyc
+buildeps/
