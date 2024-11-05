@@ -1,8 +1,0 @@
-custom_modules="../modules"
-sdl="yes"
-sdl_path="../buildeps/sdl"
-ffmpeg_path="../buildeps/ffmpeg-master-latest-linux64-lgpl-godot"
-tests="yes"
-use_breakpad="yes"
-scu_build="yes"
-compiledb="yes"
