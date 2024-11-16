@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/EIRTeam/EIRTeam.Steamworks.git
 	branch = master
-	commit = b84bdeae616f773cf480673c692f4d128ac1efd0
-	parent = ec9bd417186b286eaea758c5a7680f8a20b62c1c
+	commit = 9b3e43d3bdd898e3e3c2d24c7613187e51d2594f
+	parent = cf666a7492eb29b11c62505a604026f133bc4b34
 	method = merge
 	cmdver = 0.4.6
