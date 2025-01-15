@@ -44,6 +44,29 @@
 // while not making lines appear too soft.
 const static float FEATHER_SIZE = 1.25f;
 
+static RendererCanvasCull *_canvas_cull_singleton = nullptr;
+
+void RendererCanvasCull::_dependency_changed(Dependency::DependencyChangedNotification p_notification, DependencyTracker *p_tracker) {
+	Item *item = (Item *)p_tracker->userdata;
+
+	switch (p_notification) {
+		case Dependency::DEPENDENCY_CHANGED_MATERIAL: {
+			_canvas_cull_singleton->_item_queue_update(item, true);
+		} break;
+		default: {
+		} break;
+	}
+}
+
+void RendererCanvasCull::_dependency_deleted(const RID &p_dependency, DependencyTracker *p_tracker) {
+	Item *item = (Item *)p_tracker->userdata;
+
+	if (p_dependency == item->material) {
+		_canvas_cull_singleton->canvas_item_set_material(item->self, RID());
+	}
+	_canvas_cull_singleton->_item_queue_update(item, true);
+}
+
 void unproject_screen_rect(RendererCanvasRender::Canvas3DInfo *p_3d_info, const Rect2 &p_rect, Rect2 &r_out, bool p_screen_space = false) {
 	Transform3D canvas_trf;
 	canvas_trf.basis.rows[0].x = p_3d_info->canvas_transform.columns[0][0];
@@ -314,6 +337,19 @@ void RendererCanvasCull::_cull_canvas_item(Item *p_canvas_item, const Transform2
 		ci->children_order_dirty = false;
 	}
 
+	if (ci->use_parent_material && p_material_owner) {
+		ci->material_owner = p_material_owner;
+	} else {
+		p_material_owner = ci;
+		ci->material_owner = nullptr;
+	}
+
+	Color modulate = ci->modulate * p_modulate;
+
+	if (modulate.a < 0.007) {
+		return;
+	}
+
 	Rect2 rect = ci->get_rect();
 
 	if (ci->visibility_notifier) {
@@ -381,19 +417,6 @@ void RendererCanvasCull::_cull_canvas_item(Item *p_canvas_item, const Transform2
 		global_rect = global_rect.merge(corner_rect);
 	}
 	global_rect.position += p_clip_rect.position;
-
-	if (ci->use_parent_material && p_material_owner) {
-		ci->material_owner = p_material_owner;
-	} else {
-		p_material_owner = ci;
-		ci->material_owner = nullptr;
-	}
-
-	Color modulate(ci->modulate.r * p_modulate.r, ci->modulate.g * p_modulate.g, ci->modulate.b * p_modulate.b, ci->modulate.a * p_modulate.a);
-
-	if (modulate.a < 0.007) {
-		return;
-	}
 
 	int child_item_count = ci->child_items.size();
 	Item **child_items = ci->child_items.ptrw();
@@ -574,6 +597,8 @@ RID RendererCanvasCull::canvas_item_allocate() {
 }
 void RendererCanvasCull::canvas_item_initialize(RID p_rid) {
 	canvas_item_owner.initialize_rid(p_rid);
+	Item *instance = canvas_item_owner.get_or_null(p_rid);
+	instance->self = p_rid;
 }
 
 void RendererCanvasCull::canvas_item_set_parent(RID p_item, RID p_parent) {
@@ -1893,6 +1918,7 @@ void RendererCanvasCull::canvas_item_clear(RID p_item) {
 	ERR_FAIL_NULL(canvas_item);
 
 	canvas_item->clear();
+
 #ifdef DEBUG_ENABLED
 	if (debug_redraw) {
 		canvas_item->debug_redraw_time = debug_redraw_time;
@@ -1924,6 +1950,7 @@ void RendererCanvasCull::canvas_item_set_material(RID p_item, RID p_material) {
 	ERR_FAIL_NULL(canvas_item);
 
 	canvas_item->material = p_material;
+	_item_queue_update(canvas_item, true);
 }
 
 void RendererCanvasCull::canvas_item_set_use_parent_material(RID p_item, bool p_enable) {
@@ -1931,6 +1958,37 @@ void RendererCanvasCull::canvas_item_set_use_parent_material(RID p_item, bool p_
 	ERR_FAIL_NULL(canvas_item);
 
 	canvas_item->use_parent_material = p_enable;
+	_item_queue_update(canvas_item, true);
+}
+
+void RendererCanvasCull::canvas_item_set_instance_shader_parameter(RID p_item, const StringName &p_parameter, const Variant &p_value) {
+	Item *item = canvas_item_owner.get_or_null(p_item);
+	ERR_FAIL_NULL(item);
+
+	item->instance_uniforms.set(item->self, p_parameter, p_value);
+}
+
+Variant RendererCanvasCull::canvas_item_get_instance_shader_parameter(RID p_item, const StringName &p_parameter) const {
+	const Item *item = const_cast<RendererCanvasCull *>(this)->canvas_item_owner.get_or_null(p_item);
+	ERR_FAIL_NULL_V(item, Variant());
+
+	return item->instance_uniforms.get(p_parameter);
+}
+
+Variant RendererCanvasCull::canvas_item_get_instance_shader_parameter_default_value(RID p_item, const StringName &p_parameter) const {
+	const Item *item = const_cast<RendererCanvasCull *>(this)->canvas_item_owner.get_or_null(p_item);
+	ERR_FAIL_NULL_V(item, Variant());
+
+	return item->instance_uniforms.get_default(p_parameter);
+}
+
+void RendererCanvasCull::canvas_item_get_instance_shader_parameter_list(RID p_item, List<PropertyInfo> *p_parameters) const {
+	ERR_FAIL_NULL(p_parameters);
+	const Item *item = const_cast<RendererCanvasCull *>(this)->canvas_item_owner.get_or_null(p_item);
+	ERR_FAIL_NULL(item);
+	const_cast<RendererCanvasCull *>(this)->update_dirty_items();
+
+	item->instance_uniforms.get_property_list(*p_parameters);
 }
 
 void RendererCanvasCull::canvas_item_set_visibility_notifier(RID p_item, bool p_enable, const Rect2 &p_area, const Callable &p_enter_callable, const Callable &p_exit_callable) {
@@ -2460,6 +2518,63 @@ Rect2 RendererCanvasCull::_debug_canvas_item_get_rect(RID p_item) {
 	return canvas_item->get_rect();
 }
 
+void RendererCanvasCull::_item_queue_update(Item *p_item, bool p_update_dependencies) {
+	if (p_update_dependencies) {
+		p_item->update_dependencies = true;
+	}
+
+	if (!p_item->update_item.in_list()) {
+		_item_update_list.add(&p_item->update_item);
+	}
+}
+
+void RendererCanvasCull::update_dirty_items() {
+	while (_item_update_list.first()) {
+		_update_dirty_item(_item_update_list.first()->self());
+	}
+
+	// Instance updates may affect resources.
+	RSG::utilities->update_dirty_resources();
+}
+
+void RendererCanvasCull::_update_dirty_item(Item *p_item) {
+	if (p_item->update_dependencies) {
+		RID material = p_item->material;
+
+		if (p_item->use_parent_material) {
+			Item *parent = canvas_item_owner.get_or_null(p_item->parent);
+			while (parent != nullptr) {
+				material = parent->material;
+				if (!parent->use_parent_material) {
+					break;
+				}
+				parent = canvas_item_owner.get_or_null(parent->parent);
+			}
+		}
+
+		p_item->dependency_tracker.update_begin();
+
+		p_item->instance_uniforms.materials_start();
+
+		if (material.is_valid()) {
+			p_item->instance_uniforms.materials_append(material);
+			RSG::material_storage->material_update_dependency(material, &p_item->dependency_tracker);
+		}
+
+		if (p_item->instance_uniforms.materials_finish(p_item->self)) {
+			p_item->instance_allocated_shader_uniforms_offset = p_item->instance_uniforms.location();
+		}
+
+		p_item->dependency_tracker.update_end();
+	}
+	_item_update_list.remove(&p_item->update_item);
+	p_item->update_dependencies = false;
+}
+
+void RendererCanvasCull::update() {
+	update_dirty_items();
+}
+
 bool RendererCanvasCull::free(RID p_rid) {
 	if (canvas_owner.owns(p_rid)) {
 		Canvas *canvas = canvas_owner.get_or_null(p_rid);
@@ -2517,11 +2632,9 @@ bool RendererCanvasCull::free(RID p_rid) {
 			visibility_notifier_allocator.free(canvas_item->visibility_notifier);
 		}
 
-		/*
-		if (canvas_item->material) {
-			canvas_item->material->owners.erase(canvas_item);
-		}
-		*/
+		canvas_item_set_material(canvas_item->self, RID());
+		canvas_item->instance_uniforms.free(canvas_item->self);
+		update_dirty_items();
 
 		if (canvas_item->canvas_group != nullptr) {
 			memdelete(canvas_item->canvas_group);
@@ -2683,16 +2796,19 @@ void RendererCanvasCull::InterpolationData::notify_free_canvas_light_occluder(RI
 }
 
 RendererCanvasCull::RendererCanvasCull() {
+	_canvas_cull_singleton = this;
+
 	z_list = (RendererCanvasRender::Item **)memalloc(z_range * sizeof(RendererCanvasRender::Item *));
 	z_last_list = (RendererCanvasRender::Item **)memalloc(z_range * sizeof(RendererCanvasRender::Item *));
 
 	disable_scale = false;
 
-	debug_redraw_time = GLOBAL_DEF("debug/canvas_items/debug_redraw_time", 1.0);
-	debug_redraw_color = GLOBAL_DEF("debug/canvas_items/debug_redraw_color", Color(1.0, 0.2, 0.2, 0.5));
+	debug_redraw_time = GLOBAL_DEF(PropertyInfo(Variant::FLOAT, "debug/canvas_items/debug_redraw_time", PROPERTY_HINT_RANGE, "0.1,2,0.001,or_greater"), 1.0);
+	debug_redraw_color = GLOBAL_DEF(PropertyInfo(Variant::COLOR, "debug/canvas_items/debug_redraw_color"), Color(1.0, 0.2, 0.2, 0.5));
 }
 
 RendererCanvasCull::~RendererCanvasCull() {
 	memfree(z_list);
 	memfree(z_last_list);
+	_canvas_cull_singleton = nullptr;
 }
