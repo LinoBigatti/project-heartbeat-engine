@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/EIRTeam/shinobu.git
 	branch = ph
-	commit = 7e646518f50b6616d2c2f0e714559373a4af2eae
-	parent = a808627a29c2e1af659aa336f815b447443ad271
+	commit = b2022a4521da863e4df051c3eb51149230e9252f
+	parent = cd9da24d8eee2bfc7ae9b0592f08cd9d42f79d7c
 	method = merge
 	cmdver = 0.4.6
