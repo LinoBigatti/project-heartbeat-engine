@@ -1915,10 +1915,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		// Create initialization lock file to detect crashes during startup.
 		OS::get_singleton()->create_lock_file();
 
-#ifdef USE_BREAKPAD
-		report_user_data_dir_usable();
-#endif
-
 		main_args.push_back("--editor");
 		if (!init_windowed && !init_fullscreen) {
 			init_maximized = true;
@@ -1980,6 +1976,10 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	register_core_extensions(); // core extensions must be registered after globals setup and before display
 
 	ResourceUID::get_singleton()->load_from_cache(true); // load UUIDs from cache.
+
+#ifdef USE_BREAKPAD
+	report_user_data_dir_usable();
+#endif
 
 	if (ProjectSettings::get_singleton()->has_custom_feature("dedicated_server")) {
 		audio_driver = NULL_AUDIO_DRIVER;

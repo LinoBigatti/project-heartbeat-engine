@@ -27,7 +27,10 @@ common_win = [
     "drop_target_windows.cpp",
 ]
 
-common_win += ["crash_handler_windows_seh.cpp"]
+if env.msvc:
+    common_win += ["crash_handler_windows_seh.cpp"]
+else:
+    common_win += ["crash_handler_windows_signal.cpp"]
 
 common_win_wrap = [
     "console_wrapper_windows.cpp",
