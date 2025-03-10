@@ -36,7 +36,6 @@
 #include "servers/rendering/renderer_rd/pipeline_hash_map_rd.h"
 #include "servers/rendering/renderer_rd/shaders/canvas.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/canvas_occlusion.glsl.gen.h"
-#include "servers/rendering/renderer_rd/stencil_write_rd.h"
 #include "servers/rendering/renderer_rd/storage_rd/material_storage.h"
 #include "servers/rendering/rendering_device.h"
 #include "servers/rendering/shader_compiler.h"
@@ -85,6 +84,7 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 
 		BATCH_FLAGS_DEFAULT_NORMAL_MAP_USED = (1 << 9),
 		BATCH_FLAGS_DEFAULT_SPECULAR_MAP_USED = (1 << 10),
+		BATCH_FLAGS_USE_CLIPPING_PLANES = (1 << 11),
 	};
 
 	enum {
@@ -133,7 +133,6 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 		ShaderSpecialization shader_specialization = {};
 		uint32_t lcd_blend = 0;
 		uint32_t ubershader = 0;
-		uint32_t stencil = 0;
 
 		uint32_t hash() const {
 			uint32_t h = hash_murmur3_one_32(variant);
@@ -143,7 +142,6 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 			h = hash_murmur3_one_32(shader_specialization.packed_0, h);
 			h = hash_murmur3_one_32(lcd_blend, h);
 			h = hash_murmur3_one_32(ubershader, h);
-			h = hash_murmur3_one_32(stencil, h);
 			return hash_fmix32(h);
 		}
 	};
@@ -352,6 +350,11 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 
 	//state that does not vary across rendering all items
 
+	struct ClippingPlaneSet {
+		// 4 clipping planes
+		float clipping_planes[4*4];
+	};
+
 	struct InstanceData {
 		float world[6];
 		uint32_t flags;
@@ -384,6 +387,8 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 		ShaderSpecialization shader_specialization;
 		uint32_t specular_shininess;
 		uint32_t batch_flags;
+		uint32_t clipping_plane_index;
+		uint32_t padding[3];
 	};
 
 	// TextureState is used to determine when a new batch is required due to a change of texture state.
@@ -497,15 +502,13 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 	/// diffuse texture.
 	HashMap<RID, TightLocalVector<RID>> canvas_texture_to_uniform_set;
 	
-	StencilWriteRD stencil_write;
-
 	struct Batch {
 		// Position in the UBO measured in bytes
 		uint32_t start = 0;
 		uint32_t instance_count = 0;
 		uint32_t instance_buffer_index = 0;
-		int stencil_reference = false;
-		bool use_stencil_clipping = false;
+		uint32_t clipping_plane_buffer_index = 0;
+		uint32_t clipping_plane_set_index = 0;
 
 		TextureInfo *tex_info;
 
@@ -538,6 +541,7 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 	// per-frame buffers
 	struct DataBuffer {
 		LocalVector<RID> instance_buffers;
+		LocalVector<RID> clipping_plane_buffers;
 	};
 
 	struct State {
@@ -571,9 +575,17 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 		LocalVector<Batch> canvas_instance_batches;
 		uint32_t current_data_buffer_index = 0;
 		uint32_t current_instance_buffer_index = 0;
+		uint32_t current_clipping_plane_buffer_index = 0;
+
 		uint32_t current_batch_index = 0;
 		uint32_t last_instance_index = 0;
+		uint32_t last_clipping_plane_index = 0;
 		InstanceData *instance_data_array = nullptr;
+		ClippingPlaneSet *clipping_plane_set_array = nullptr;
+
+
+		uint32_t max_clipping_plane_sets_per_buffer = 256;
+		uint32_t max_clipping_plane_set_buffer_size = 256 * sizeof(ClippingPlaneSet);
 
 		uint32_t max_instances_per_buffer = 16384;
 		uint32_t max_instance_buffer_size = 16384 * sizeof(InstanceData);
@@ -632,9 +644,7 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 	};
 
 	inline RID _get_pipeline_specialization_or_ubershader(CanvasShaderData *p_shader_data, PipelineKey &r_pipeline_key, PushConstant &r_push_constant, RID p_mesh_instance = RID(), void *p_surface = nullptr, uint32_t p_surface_index = 0, RID *r_vertex_array = nullptr);
-	void _prepare_stencil_write(RID p_render_target, bool p_to_backbuffer, RendererCanvasRender::Canvas3DInfo *p_3d_info);
-	void _write_to_stencil(RD::DrawListID p_draw_list, RID p_render_target, bool p_to_backbuffer, Rect2 p_rect, int p_stencil_ref);
-	void _render_batch_items(RenderTarget p_to_render_target, int p_item_count, const Transform2D &p_canvas_transform_inverse, Light *p_lights, bool &r_sdf_used, bool p_to_backbuffer = false, bool p_use_stencil_clipping = false, RenderingMethod::RenderInfo *r_render_info = nullptr);
+	void _render_batch_items(RenderTarget p_to_render_target, int p_item_count, const Transform2D &p_canvas_transform_inverse, Light *p_lights, bool &r_sdf_used, RendererCanvasRender::Canvas3DInfo *p_3d_info, bool p_to_backbuffer = false, RenderingMethod::RenderInfo *r_render_info = nullptr);
 	void _record_item_commands(const Item *p_item, RenderTarget p_render_target, const Transform2D &p_base_transform, Item *&r_current_clip, Light *p_lights, uint32_t &r_index, bool &r_batch_broken, bool &r_sdf_used, Batch *&r_current_batch);
 	void _render_batch(RD::DrawListID p_draw_list, CanvasShaderData *p_shader_data, RenderingDevice::FramebufferFormatID p_framebuffer_format, Light *p_lights, Batch const *p_batch, RenderingMethod::RenderInfo *r_render_info = nullptr);
 	void _prepare_batch_texture_info(RID p_texture, TextureState &p_state, TextureInfo *p_info);
@@ -642,6 +652,9 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 	[[nodiscard]] Batch *_new_batch(bool &r_batch_broken);
 	void _add_to_batch(uint32_t &r_index, bool &r_batch_broken, Batch *&r_current_batch);
 	void _allocate_instance_buffer();
+	void _allocate_clipping_plane_set_buffer();
+	void _calculate_clipping_planes(Rect2 p_rect, RendererCanvasRender::Canvas3DInfo *p_3d_info, Plane r_planes[4]);
+	void _add_clipping_plane(Plane world_planes[4], uint32_t &r_index);
 
 	_FORCE_INLINE_ void _update_transform_2d_to_mat2x4(const Transform2D &p_transform, float *p_mat2x4);
 	_FORCE_INLINE_ void _update_transform_2d_to_mat2x3(const Transform2D &p_transform, float *p_mat2x3);

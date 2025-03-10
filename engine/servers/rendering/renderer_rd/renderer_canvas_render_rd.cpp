@@ -505,36 +505,6 @@ RID RendererCanvasRenderRD::_get_pipeline_specialization_or_ubershader(CanvasSha
 	return RID();
 }
 
-void RendererCanvasRenderRD::_prepare_stencil_write(RID p_render_target, bool p_to_backbuffer, RendererCanvasRender::Canvas3DInfo *p_3d_info) {
-	RID framebuffer;
-	RendererRD::TextureStorage *texture_storage = RendererRD::TextureStorage::get_singleton();
-	if (p_to_backbuffer) {
-		framebuffer = texture_storage->render_target_get_rd_backbuffer_framebuffer(p_render_target);
-	} else {
-		framebuffer = texture_storage->render_target_get_rd_framebuffer(p_render_target);
-	}
-
-	RD::FramebufferFormatID format = RD::get_singleton()->framebuffer_get_format(framebuffer);
-	StencilWriteRD::StencilWriteTransforms transforms = {
-		.canvas = p_3d_info->canvas_transform_3d,
-		.screen = p_3d_info->screen_transform_3d,
-		.view = p_3d_info->view,
-		.projection = p_3d_info->projection
-	};
-	stencil_write.setup_stencil_write(format, transforms);
-}
-
-void RendererCanvasRenderRD::_write_to_stencil(RD::DrawListID p_draw_list, RID p_render_target, bool p_to_backbuffer, Rect2 p_rect, int p_stencil_ref) {
-	RID framebuffer;
-	RendererRD::TextureStorage *texture_storage = RendererRD::TextureStorage::get_singleton();
-	if (p_to_backbuffer) {
-		framebuffer = texture_storage->render_target_get_rd_backbuffer_framebuffer(p_render_target);
-	} else {
-		framebuffer = texture_storage->render_target_get_rd_framebuffer(p_render_target);
-	}
-	stencil_write.do_stencil_write(p_draw_list, RD::get_singleton()->framebuffer_get_format(framebuffer), p_rect, p_stencil_ref);
-}
-
 void RendererCanvasRenderRD::canvas_render_items(RID p_to_render_target, Item *p_item_list, const Color &p_modulate, Light *p_light_list, Light *p_directional_light_list, const Transform2D &p_canvas_transform, RendererCanvasRender::Canvas3DInfo *p_3d_info, RenderingServer::CanvasItemTextureFilter p_default_filter, RenderingServer::CanvasItemTextureRepeat p_default_repeat, bool p_snap_2d_vertices_to_pixel, bool &r_sdf_used, RenderingMethod::RenderInfo *r_render_info) {
 	RendererRD::TextureStorage *texture_storage = RendererRD::TextureStorage::get_singleton();
 	RendererRD::MaterialStorage *material_storage = RendererRD::MaterialStorage::get_singleton();
@@ -788,6 +758,7 @@ void RendererCanvasRenderRD::canvas_render_items(RID p_to_render_target, Item *p
 	bool skip_item = false;
 
 	state.last_instance_index = 0;
+	state.last_clipping_plane_index = 0;
 
 	bool update_skeletons = false;
 	bool time_used = false;
@@ -856,8 +827,7 @@ void RendererCanvasRenderRD::canvas_render_items(RID p_to_render_target, Item *p
 					mesh_storage->update_mesh_instances();
 					update_skeletons = false;
 				}
-				_prepare_stencil_write(p_to_render_target, false, p_3d_info);
-				_render_batch_items(to_render_target, item_count, canvas_transform_inverse, p_light_list, r_sdf_used, false, p_3d_info->use_3d, r_render_info);
+				_render_batch_items(to_render_target, item_count, canvas_transform_inverse, p_light_list, r_sdf_used, p_3d_info, false, r_render_info);
 				item_count = 0;
 
 				if (ci->canvas_group_owner->canvas_group->mode != RS::CANVAS_GROUP_MODE_TRANSPARENT) {
@@ -889,8 +859,7 @@ void RendererCanvasRenderRD::canvas_render_items(RID p_to_render_target, Item *p
 				update_skeletons = false;
 			}
 
-			_prepare_stencil_write(p_to_render_target, true, p_3d_info);
-			_render_batch_items(to_render_target, item_count, canvas_transform_inverse, p_light_list, r_sdf_used, true, p_3d_info->use_3d, r_render_info);
+			_render_batch_items(to_render_target, item_count, canvas_transform_inverse, p_light_list, r_sdf_used, p_3d_info, true, r_render_info);
 			item_count = 0;
 
 			if (ci->canvas_group->blur_mipmaps) {
@@ -914,8 +883,7 @@ void RendererCanvasRenderRD::canvas_render_items(RID p_to_render_target, Item *p
 				update_skeletons = false;
 			}
 
-			_prepare_stencil_write(p_to_render_target, false, p_3d_info);
-			_render_batch_items(to_render_target, item_count, canvas_transform_inverse, p_light_list, r_sdf_used, false, p_3d_info->use_3d, r_render_info);
+			_render_batch_items(to_render_target, item_count, canvas_transform_inverse, p_light_list, r_sdf_used, p_3d_info, false, r_render_info);
 			item_count = 0;
 
 			texture_storage->render_target_copy_to_back_buffer(p_to_render_target, back_buffer_rect, backbuffer_gen_mipmaps);
@@ -945,8 +913,7 @@ void RendererCanvasRenderRD::canvas_render_items(RID p_to_render_target, Item *p
 				update_skeletons = false;
 			}
 
-			_prepare_stencil_write(p_to_render_target, canvas_group_owner != nullptr, p_3d_info);
-			_render_batch_items(to_render_target, item_count, canvas_transform_inverse, p_light_list, r_sdf_used, canvas_group_owner != nullptr, p_3d_info->use_3d, r_render_info);
+			_render_batch_items(to_render_target, item_count, canvas_transform_inverse, p_light_list, r_sdf_used, p_3d_info, canvas_group_owner != nullptr, r_render_info);
 			//then reset
 			item_count = 0;
 		}
@@ -961,6 +928,7 @@ void RendererCanvasRenderRD::canvas_render_items(RID p_to_render_target, Item *p
 	texture_info_map.clear();
 	state.current_data_buffer_index = (state.current_data_buffer_index + 1) % BATCH_DATA_BUFFER_COUNT;
 	state.current_instance_buffer_index = 0;
+	state.current_clipping_plane_buffer_index = 0;
 }
 
 RID RendererCanvasRenderRD::light_create() {
@@ -1551,17 +1519,6 @@ void RendererCanvasRenderRD::CanvasShaderData::_create_pipeline(PipelineKey p_pi
 		attachment = RendererRD::MaterialStorage::ShaderData::blend_mode_to_blend_attachment(blend_mode_rd);
 	}
 
-	RD::PipelineDepthStencilState depth_stencil_state;
-	if (p_pipeline_key.stencil) {
-		dynamic_state_flags |= RD::DYNAMIC_STATE_STENCIL_REFERENCE;
-		depth_stencil_state.enable_stencil = true;
-		depth_stencil_state.front_op.compare = RenderingDeviceCommons::COMPARE_OP_EQUAL;
-		depth_stencil_state.front_op.write_mask = 0x00;
-		depth_stencil_state.front_op.reference = 0x00;
-		depth_stencil_state.front_op.compare_mask = 0xFF;
-		depth_stencil_state.back_op = depth_stencil_state.front_op;
-	}
-
 	blend_state.attachments.push_back(attachment);
 
 	RD::PipelineMultisampleState multisample_state;
@@ -1578,7 +1535,7 @@ void RendererCanvasRenderRD::CanvasShaderData::_create_pipeline(PipelineKey p_pi
 	RID shader_rid = get_shader(p_pipeline_key.variant, p_pipeline_key.ubershader);
 	ERR_FAIL_COND(shader_rid.is_null());
 
-	RID pipeline = RD::get_singleton()->render_pipeline_create(shader_rid, p_pipeline_key.framebuffer_format_id, p_pipeline_key.vertex_format_id, p_pipeline_key.render_primitive, RD::PipelineRasterizationState(), multisample_state, depth_stencil_state, blend_state, dynamic_state_flags, 0, specialization_constants);
+	RID pipeline = RD::get_singleton()->render_pipeline_create(shader_rid, p_pipeline_key.framebuffer_format_id, p_pipeline_key.vertex_format_id, p_pipeline_key.render_primitive, RD::PipelineRasterizationState(), multisample_state, RD::PipelineDepthStencilState(), blend_state, dynamic_state_flags, 0, specialization_constants);
 	ERR_FAIL_COND(pipeline.is_null());
 
 	pipeline_hash_map.add_compiled_pipeline(p_pipeline_key.hash(), pipeline);
@@ -1775,8 +1732,8 @@ RendererCanvasRenderRD::RendererCanvasRenderRD() {
 		default_samplers.default_repeat = RS::CANVAS_ITEM_TEXTURE_REPEAT_DISABLED;
 	}
 
-	// preallocate 5 slots for uniform set 3
-	state.batch_texture_uniforms.resize(5);
+	// preallocate 6 slots for uniform set 3
+	state.batch_texture_uniforms.resize(6);
 
 	{ //shader variants
 
@@ -1813,10 +1770,6 @@ RendererCanvasRenderRD::RendererCanvasRenderRD() {
 		shader.default_version_data->version = shader.canvas_shader.version_create();
 		shader.default_version_data->blend_mode = RendererRD::MaterialStorage::ShaderData::BLEND_MODE_MIX;
 		shader.default_version_rd_shader = shader.default_version_data->get_shader(SHADER_VARIANT_QUAD, false);
-	}
-
-	{
-		stencil_write.initialize();
 	}
 
 	{
@@ -2129,8 +2082,10 @@ void fragment() {
 		for (uint32_t i = 0; i < BATCH_DATA_BUFFER_COUNT; i++) {
 			DataBuffer &db = state.canvas_instance_data_buffers[i];
 			db.instance_buffers.push_back(RD::get_singleton()->storage_buffer_create(state.max_instance_buffer_size));
+			db.clipping_plane_buffers.push_back(RD::get_singleton()->storage_buffer_create(state.max_clipping_plane_set_buffer_size));
 		}
 		state.instance_data_array = memnew_arr(InstanceData, state.max_instances_per_buffer);
+		state.clipping_plane_set_array = memnew_arr(ClippingPlaneSet, state.max_clipping_plane_sets_per_buffer);
 	}
 }
 
@@ -2187,9 +2142,10 @@ uint32_t RendererCanvasRenderRD::get_pipeline_compilations(RS::PipelineSource p_
 	return shader.pipeline_compilations[p_source];
 }
 
-void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target, int p_item_count, const Transform2D &p_canvas_transform_inverse, Light *p_lights, bool &r_sdf_used, bool p_to_backbuffer, bool p_use_stencil_clipping, RenderingMethod::RenderInfo *r_render_info) {
+void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target, int p_item_count, const Transform2D &p_canvas_transform_inverse, Light *p_lights, bool &r_sdf_used, RendererCanvasRender::Canvas3DInfo *p_3d_info, bool p_to_backbuffer, RenderingMethod::RenderInfo *r_render_info) {
 	// Record batches
 	uint32_t instance_index = 0;
+	uint32_t clip_plane_index = 0;
 	{
 		RendererRD::MaterialStorage *material_storage = RendererRD::MaterialStorage::get_singleton();
 		Item *current_clip = nullptr;
@@ -2202,17 +2158,31 @@ void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target
 		// Override the start position and index as we want to start from where we finished off last time.
 		current_batch->start = state.last_instance_index;
 
-		int stencil_ref_idx = 0;
-
 		for (int i = 0; i < p_item_count; i++) {
 			Item *ci = items[i];
 
 			if (ci->final_clip_owner != current_batch->clip) {
 				current_batch = _new_batch(batch_broken);
 				current_batch->clip = ci->final_clip_owner;
-				stencil_ref_idx++;
-				current_batch->stencil_reference = stencil_ref_idx;
 				current_clip = ci->final_clip_owner;
+				if (p_3d_info->use_3d && current_clip) {
+					Plane planes[4];
+					_calculate_clipping_planes(current_clip->final_clip_rect, p_3d_info, planes);
+					const int write_idx = clip_plane_index + state.last_clipping_plane_index;
+					for (int j = 0; j < 4; j++) {
+						state.clipping_plane_set_array[write_idx].clipping_planes[j*4] = planes[j].normal.x;
+						state.clipping_plane_set_array[write_idx].clipping_planes[j*4+1] = planes[j].normal.y;
+						state.clipping_plane_set_array[write_idx].clipping_planes[j*4+2] = planes[j].normal.z;
+						state.clipping_plane_set_array[write_idx].clipping_planes[j*4+3] = planes[j].d;
+					}
+					int curr_clipping_plane_idx = clip_plane_index + state.last_clipping_plane_index;
+					int curr_clipping_plane_buffer_idx = state.current_clipping_plane_buffer_index;
+					_add_clipping_plane(planes, clip_plane_index);
+					
+					current_batch->clipping_plane_set_index = curr_clipping_plane_idx;
+					current_batch->clipping_plane_buffer_index = curr_clipping_plane_buffer_idx;
+					current_batch->flags |= BATCH_FLAGS_USE_CLIPPING_PLANES;
+				}
 			}
 
 			RID material = ci->material_owner == nullptr ? ci->material : ci->material_owner->material;
@@ -2272,6 +2242,13 @@ void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target
 					instance_index * sizeof(InstanceData),
 					state.instance_data_array);
 		}
+		if (clip_plane_index > 0) {
+			RD::get_singleton()->buffer_update(
+				state.canvas_instance_data_buffers[state.current_data_buffer_index].clipping_plane_buffers[state.current_clipping_plane_buffer_index],
+				state.last_clipping_plane_index * sizeof(ClippingPlaneSet),
+				clip_plane_index * sizeof(ClippingPlaneSet),
+				state.clipping_plane_set_array);
+		}
 	}
 
 	if (state.canvas_instance_batches.is_empty()) {
@@ -2310,13 +2287,7 @@ void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target
 
 	RD::FramebufferFormatID fb_format = RD::get_singleton()->framebuffer_get_format(framebuffer);
 
-	BitField<RD::DrawFlags> draw_flags = clear ? RD::DRAW_CLEAR_COLOR_0 : RD::DRAW_DEFAULT_ALL;
-	if (p_use_stencil_clipping) {
-		// Clear stencil every single day of the week
-		draw_flags.set_flag(RD::DRAW_CLEAR_STENCIL);
-	}
-
-	RD::DrawListID draw_list = RD::get_singleton()->draw_list_begin(framebuffer, draw_flags, clear_colors, 1.0f, 0, Rect2(), RDD::BreadcrumbMarker::UI_PASS);
+	RD::DrawListID draw_list = RD::get_singleton()->draw_list_begin(framebuffer, clear ? RD::DRAW_CLEAR_COLOR_0 : RD::DRAW_DEFAULT_ALL, clear_colors, 1.0f, 0, Rect2(), RDD::BreadcrumbMarker::UI_PASS);
 
 	RD::get_singleton()->draw_list_bind_uniform_set(draw_list, fb_uniform_set, BASE_UNIFORM_SET);
 	RD::get_singleton()->draw_list_bind_uniform_set(draw_list, state.default_transforms_uniform_set, TRANSFORMS_UNIFORM_SET);
@@ -2335,20 +2306,14 @@ void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target
 		if (current_clip != current_batch->clip) {
 			current_clip = current_batch->clip;
 			if (current_clip) {
-				if (p_use_stencil_clipping) {
+				if (p_3d_info->use_3d) {
 					RD::get_singleton()->draw_list_disable_scissor(draw_list);
-					_write_to_stencil(draw_list, p_to_render_target.render_target, p_to_backbuffer, current_clip->final_clip_rect, current_batch->stencil_reference);
-					// Re-bind uniform set
-					RD::get_singleton()->draw_list_bind_uniform_set(draw_list, fb_uniform_set, BASE_UNIFORM_SET);
 				} else {
 					RD::get_singleton()->draw_list_enable_scissor(draw_list, current_clip->final_clip_rect);
 				}
 			} else {
 				RD::get_singleton()->draw_list_disable_scissor(draw_list);
 			}
-		}
-		if (current_clip) {
-			current_batch->use_stencil_clipping = p_use_stencil_clipping;
 		}
 
 		CanvasShaderData *shader_data = shader.default_version_data;
@@ -2373,6 +2338,7 @@ void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target
 	state.current_batch_index = 0;
 	state.canvas_instance_batches.clear();
 	state.last_instance_index += instance_index;
+	state.last_clipping_plane_index += clip_plane_index;
 }
 
 RendererCanvasRenderRD::InstanceData *RendererCanvasRenderRD::new_instance_data(float *p_world, uint32_t *p_lights, uint32_t p_base_flags, uint32_t p_index, uint32_t p_uniforms_ofs, TextureInfo *p_info) {
@@ -2421,6 +2387,11 @@ void RendererCanvasRenderRD::_record_item_commands(const Item *p_item, RenderTar
 	bool use_linear_colors = p_render_target.use_linear_colors;
 	uint32_t base_flags = 0;
 	uint32_t uniforms_ofs = static_cast<uint32_t>(p_item->instance_allocated_shader_uniforms_offset);
+
+	const bool had_plane_clipping = r_current_batch->flags & BATCH_FLAGS_USE_CLIPPING_PLANES;
+	const int base_plane_clipping_buffer_idx = r_current_batch->clipping_plane_buffer_index;
+	const int base_plane_clipping_plane_set_idx = r_current_batch->clipping_plane_set_index;
+
 
 	bool reclip = false;
 
@@ -2951,6 +2922,12 @@ void RendererCanvasRenderRD::_record_item_commands(const Item *p_item, RenderTar
 			} break;
 		}
 
+		if (r_current_batch->clip) {
+			r_current_batch->flags |= had_plane_clipping ? BATCH_FLAGS_USE_CLIPPING_PLANES : 0;
+			r_current_batch->clipping_plane_set_index = base_plane_clipping_plane_set_idx;
+			r_current_batch->clipping_plane_buffer_index = base_plane_clipping_buffer_idx;
+		}
+
 		c = c->next;
 		r_batch_broken = false;
 	}
@@ -3084,6 +3061,7 @@ void RendererCanvasRenderRD::_render_batch(RD::DrawListID p_draw_list, CanvasSha
 			uniform_ptrw[2] = RD::Uniform(RD::UNIFORM_TYPE_TEXTURE, 2, p_batch->tex_info->specular);
 			uniform_ptrw[3] = RD::Uniform(RD::UNIFORM_TYPE_SAMPLER, 3, p_batch->tex_info->sampler);
 			uniform_ptrw[4] = RD::Uniform(RD::UNIFORM_TYPE_STORAGE_BUFFER, 4, state.canvas_instance_data_buffers[state.current_data_buffer_index].instance_buffers[p_batch->instance_buffer_index]);
+			uniform_ptrw[5] = RD::Uniform(RD::UNIFORM_TYPE_STORAGE_BUFFER, 5, state.canvas_instance_data_buffers[state.current_data_buffer_index].clipping_plane_buffers[p_batch->clipping_plane_buffer_index]);
 
 			RID rid = RD::get_singleton()->uniform_set_create(state.batch_texture_uniforms, shader.default_version_rd_shader, BATCH_UNIFORM_SET);
 			ERR_FAIL_COND_MSG(rid.is_null(), "Failed to create uniform set for batch.");
@@ -3115,6 +3093,7 @@ void RendererCanvasRenderRD::_render_batch(RD::DrawListID p_draw_list, CanvasSha
 	push_constant.base_instance_index = p_batch->start;
 	push_constant.specular_shininess = p_batch->tex_info->specular_shininess;
 	push_constant.batch_flags = p_batch->tex_info->flags | p_batch->flags;
+	push_constant.clipping_plane_index = p_batch->clipping_plane_set_index;
 
 	RID pipeline;
 	PipelineKey pipeline_key;
@@ -3123,10 +3102,6 @@ void RendererCanvasRenderRD::_render_batch(RD::DrawListID p_draw_list, CanvasSha
 	pipeline_key.render_primitive = p_batch->render_primitive;
 	pipeline_key.shader_specialization.use_lighting = p_batch->use_lighting;
 	pipeline_key.lcd_blend = p_batch->has_blend;
-	pipeline_key.stencil = p_batch->use_stencil_clipping;
-	if (pipeline_key.stencil) {
-		RD::get_singleton()->draw_list_set_stencil_ref(p_draw_list, p_batch->stencil_reference);
-	}
 
 	switch (p_batch->command_type) {
 		case Item::Command::TYPE_RECT:
@@ -3290,6 +3265,7 @@ RendererCanvasRenderRD::Batch *RendererCanvasRenderRD::_new_batch(bool &r_batch_
 	if (state.canvas_instance_batches.size() == 0) {
 		Batch new_batch;
 		new_batch.instance_buffer_index = state.current_instance_buffer_index;
+		new_batch.clipping_plane_buffer_index = state.current_clipping_plane_buffer_index;
 		state.canvas_instance_batches.push_back(new_batch);
 		return state.canvas_instance_batches.ptr();
 	}
@@ -3305,6 +3281,7 @@ RendererCanvasRenderRD::Batch *RendererCanvasRenderRD::_new_batch(bool &r_batch_
 	new_batch.instance_count = 0;
 	new_batch.start = state.canvas_instance_batches[state.current_batch_index].start + state.canvas_instance_batches[state.current_batch_index].instance_count;
 	new_batch.instance_buffer_index = state.current_instance_buffer_index;
+	new_batch.clipping_plane_buffer_index = state.current_clipping_plane_buffer_index;
 	state.current_batch_index++;
 	state.canvas_instance_batches.push_back(new_batch);
 	return &state.canvas_instance_batches[state.current_batch_index];
@@ -3341,6 +3318,62 @@ void RendererCanvasRenderRD::_allocate_instance_buffer() {
 	// Allocate a new buffer.
 	RID buf = RD::get_singleton()->storage_buffer_create(state.max_instance_buffer_size);
 	state.canvas_instance_data_buffers[state.current_data_buffer_index].instance_buffers.push_back(buf);
+}
+
+void RendererCanvasRenderRD::_allocate_clipping_plane_set_buffer() {
+	state.current_clipping_plane_buffer_index++;
+
+	if (state.current_clipping_plane_buffer_index < state.canvas_instance_data_buffers[state.current_data_buffer_index].clipping_plane_buffers.size()) {
+		// We already allocated another buffer in a previous frame, so we can just use it.
+		return;
+	}
+
+	// Allocate a new buffer.
+	RID buf = RD::get_singleton()->storage_buffer_create(state.max_clipping_plane_set_buffer_size);
+	state.canvas_instance_data_buffers[state.current_data_buffer_index].clipping_plane_buffers.push_back(buf);
+}
+
+void RendererCanvasRenderRD::_calculate_clipping_planes(Rect2 p_rect, RendererCanvasRender::Canvas3DInfo *p_3d_info, Plane r_planes[4]) {
+	Transform3D combined_proj_world = p_3d_info->canvas_transform_3d * p_3d_info->screen_transform_3d;
+	Vector2 rect_center_2d = p_rect.get_center();
+	Vector3 rect_center = combined_proj_world.xform(Vector3(rect_center_2d.x, rect_center_2d.y, 0.0));
+	for (int i = 0; i < 4; i++) {
+		Vector2 edge_center_2d;
+
+		switch(i) {
+			case 0: {
+				edge_center_2d = p_rect.position + Vector2(0.0, p_rect.size.y * 0.5);
+			} break;
+			case 1: {
+				edge_center_2d = p_rect.position + Vector2(p_rect.size.x, p_rect.size.y * 0.5);
+			} break;
+			case 2: {
+				edge_center_2d = p_rect.position + Vector2(p_rect.size.x * 0.5, 0.0);
+			} break;
+			case 3: {
+				edge_center_2d = p_rect.position + Vector2(p_rect.size.x * 0.5, p_rect.size.y);
+			} break;
+		}
+
+		Vector3 edge_center = combined_proj_world.xform(Vector3(edge_center_2d.x, edge_center_2d.y, 0.0));
+		r_planes[i] = Plane(edge_center.direction_to(rect_center), edge_center);
+	}
+}
+
+void RendererCanvasRenderRD::_add_clipping_plane(Plane world_planes[4], uint32_t &r_index) {
+	r_index++;
+	if (r_index + state.last_clipping_plane_index >= state.max_clipping_plane_sets_per_buffer) {
+		// Copy over all data needed for rendering right away
+		// then go back to recording item commands.
+		RD::get_singleton()->buffer_update(
+				state.canvas_instance_data_buffers[state.current_data_buffer_index].clipping_plane_buffers[state.current_clipping_plane_buffer_index],
+				state.last_clipping_plane_index * sizeof(ClippingPlaneSet),
+				r_index * sizeof(ClippingPlaneSet),
+				state.instance_data_array);
+		_allocate_clipping_plane_set_buffer();
+		r_index = 0;
+		state.last_clipping_plane_index = 0;
+	}
 }
 
 void RendererCanvasRenderRD::_prepare_batch_texture_info(RID p_texture, TextureState &p_state, TextureInfo *p_info) {
@@ -3433,6 +3466,9 @@ RendererCanvasRenderRD::~RendererCanvasRenderRD() {
 	for (uint32_t i = 0; i < BATCH_DATA_BUFFER_COUNT; i++) {
 		for (uint32_t j = 0; j < state.canvas_instance_data_buffers[i].instance_buffers.size(); j++) {
 			RD::get_singleton()->free(state.canvas_instance_data_buffers[i].instance_buffers[j]);
+		}
+		for (uint32_t j = 0; j < state.canvas_instance_data_buffers[i].clipping_plane_buffers.size(); j++) {
+			RD::get_singleton()->free(state.canvas_instance_data_buffers[i].clipping_plane_buffers[j]);
 		}
 	}
 

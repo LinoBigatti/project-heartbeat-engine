@@ -56,6 +56,15 @@ vec3 srgb_to_linear(vec3 color) {
 }
 #endif
 
+out gl_PerVertex
+{
+    vec4  gl_Position;
+	#ifdef USE_POINT_SIZE
+	float gl_PointSize;
+	#endif
+    float gl_ClipDistance[4];
+};
+
 void main() {
 	vec4 instance_custom = vec4(0.0);
 #if defined(CUSTOM0_USED)
@@ -223,8 +232,17 @@ void main() {
 
 	vertex_interp = vertex;
 	uv_interp = uv;
-
+	for (int i = 0; i < 4; i++) {
+		gl_ClipDistance[i] = 1.0;
+	}
 	if (canvas_data.use_3d_transform) {
+		if (bool(params.batch_flags & BATCH_FLAGS_USE_CLIPPING_PLANES)) {
+			vec3 vertex_world = (canvas_data.canvas_transform_3d * canvas_data.screen_transform_3d * vec4(vertex, 0.0, 1.0)).xyz;
+			for (int i = 0; i < 4; i++) {
+				vec4 plane_def = clipping_planes.data[params.clipping_plane_index].clipping_planes[i];
+				gl_ClipDistance[i] = dot(plane_def.xyz, vertex_world) - plane_def.w;
+			}
+		}
 		gl_Position = canvas_data.projection_matrix * canvas_data.view_matrix * canvas_data.canvas_transform_3d * canvas_data.screen_transform_3d * vec4(vertex, 0.0, 1.0);
 	} else {
 		gl_Position = canvas_data.screen_transform * vec4(vertex, 0.0, 1.0);
