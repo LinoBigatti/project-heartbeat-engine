@@ -1,0 +1,63 @@
+name: Upload release
+on:
+  workflow_call:
+
+# Global Settings
+# SCONS_CACHE for windows must be set in the build environment
+env:
+  SCONSFLAGS: profile="../misc/build_profiles/production_windows.py" separate_debug_symbols="yes" debug_symbols="yes"
+  SCONS_CACHE_MSVC_CONFIG: true
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  delete-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Create/delete release
+        run: |
+          gh release delete latest --cleanup-tag -y || true
+          sleep 15
+          gh release create latest -t "$NAME"
+
+  publish-release:
+    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    needs: delete-release
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows editor
+            artifact-name: windows-editor
+          - name: Windows engine
+            artifact-name: windows-engine
+          - name: Linux engine
+            artifact-name: linux-engine
+          - name: Linux editor
+            artifact-name: linux-editor
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: 'repo'
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-name }}
+
+      - name: Update Latest
+        run: |
+          cd ${{ matrix.artifact-name }}
+          mkdir ../engine
+          mkdir ../pdbs
+          mv * ../engine
+          mv ../engine/*.pdb ../pdbs/ || true
+          mv ../engine/*.syms ../pdbs/ || true
+          zip -j -r ${{ matrix.artifact-name }}.zip ../engine/*
+          cd $GITHUB_WORKSPACE/repo
+          gh release upload latest $(for a in ../pdbs/*; do echo $a; done) ../${{ matrix.artifact-name }}/${{ matrix.artifact-name }}.zip
