@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
 # SCsub
 
 Import("env")
@@ -10,9 +13,15 @@ thirdparty_obj = []
 thirdparty_sources = []
 
 if env["platform"] in ["linuxbsd", "macos", "android"]:
-    thirdparty_sources = ["tiny_process_lib/process.cpp", "tiny_process_lib/process_unix.cpp"]
+    thirdparty_sources = [
+        "tiny_process_lib/process.cpp",
+        "tiny_process_lib/process_unix.cpp",
+    ]
 elif env["platform"] == "windows":
-    thirdparty_sources = ["tiny_process_lib/process.cpp", "tiny_process_lib/process_win.cpp"]
+    thirdparty_sources = [
+        "tiny_process_lib/process.cpp",
+        "tiny_process_lib/process_win.cpp",
+    ]
 
 thirdparty_dir = "thirdparty/"
 thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]

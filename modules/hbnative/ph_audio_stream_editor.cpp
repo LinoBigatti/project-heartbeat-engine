@@ -110,14 +110,16 @@ void PHAudioStreamEditor::_preview_changed(ObjectID p_which) {
 }
 
 void PHAudioStreamEditor::_changed_callback(Object *p_changed, const char *p_prop) {
-	if (!is_visible())
+	if (!is_visible()) {
 		return;
+	}
 	queue_redraw();
 }
 
 void PHAudioStreamEditor::edit(Ref<AudioStream> p_stream) {
-	if (!stream.is_null())
+	if (!stream.is_null()) {
 		stream->disconnect("changed", callable_mp((CanvasItem *)this, &CanvasItem::queue_redraw));
+	}
 
 	stream = p_stream;
 

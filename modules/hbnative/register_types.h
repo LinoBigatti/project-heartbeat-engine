@@ -5,4 +5,4 @@
 
 void initialize_hbnative_module(ModuleInitializationLevel p_level);
 void uninitialize_hbnative_module(ModuleInitializationLevel p_level);
-#endif
+#endif // HBNATIVE_REGISTER_TYPES_H

@@ -4,4 +4,4 @@
 
 void initialize_shinobu_module(ModuleInitializationLevel p_level);
 void uninitialize_shinobu_module(ModuleInitializationLevel p_level);
-#endif
+#endif // SHINOBU_REGISTER_TYPES_H

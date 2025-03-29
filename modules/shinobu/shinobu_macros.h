@@ -1,5 +1,5 @@
-#ifndef SHINOBU_UTILS_H
-#define SHINOBU_UTILS_H
+#ifndef SHINOBU_MACROS_H
+#define SHINOBU_MACROS_H
 
 #ifdef SHINOBU_DEBUG
 #define __SHINOBU_PRINT_ERR(error_message) \
@@ -21,4 +21,4 @@
 		__SHINOBU_PRINT_ERR(error_message);                                        \
 	}
 
-#endif
+#endif // SHINOBU_MACROS_H

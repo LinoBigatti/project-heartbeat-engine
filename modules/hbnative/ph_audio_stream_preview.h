@@ -110,4 +110,4 @@ public:
 	PHAudioStreamPreviewGenerator();
 };
 
-#endif // AUDIO_STREAM_PREVIEW_H
+#endif // PH_AUDIO_STREAM_PREVIEW_H

@@ -131,4 +131,4 @@ MA_API void ma_channel_remap_node_uninit(ma_channel_remap_node *pChannelRemapNod
 	ma_node_uninit(pChannelRemapNode, pAllocationCallbacks);
 }
 
-#endif
+#endif // SHINOBU_CHANNEL_REMAP_H

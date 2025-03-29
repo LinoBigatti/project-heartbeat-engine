@@ -129,8 +129,9 @@ void DIVABoneDB::read_classic(Ref<StreamPeerBuffer> p_stream) {
 	}
 	queue.position_pop();
 	queue.position_push(skeleton_name_offsets_offset);
-	for (uint32_t i = 0; i < skeleton_count; i++)
+	for (uint32_t i = 0; i < skeleton_count; i++) {
 		skeletons[i]->name = DIVAReadHelpers::read_null_terminated_string(p_stream->get_u32(), queue);
+	}
 	queue.position_pop();
 }
 

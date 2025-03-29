@@ -88,4 +88,4 @@ public:
 	PHAudioStreamEditor();
 };
 
-#endif // AUDIO_STREAM_EDITOR_PLUGIN_H
+#endif // PH_AUDIO_STREAM_EDITOR_H

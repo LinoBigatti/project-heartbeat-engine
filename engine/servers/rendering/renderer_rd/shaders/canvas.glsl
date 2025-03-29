@@ -56,13 +56,12 @@ vec3 srgb_to_linear(vec3 color) {
 }
 #endif
 
-out gl_PerVertex
-{
-    vec4  gl_Position;
-	#ifdef USE_POINT_SIZE
+out gl_PerVertex {
+	vec4 gl_Position;
+#ifdef USE_POINT_SIZE
 	float gl_PointSize;
-	#endif
-    float gl_ClipDistance[4];
+#endif
+	float gl_ClipDistance[4];
 };
 
 void main() {

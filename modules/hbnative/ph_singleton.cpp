@@ -199,17 +199,17 @@ void PHNative::set_blur_controls_enabled(bool p_blur_controls_enabled) {
 }
 
 Array PHNative::get_string_from_utf8_checked(const PackedByteArray &p_arr) const {
-		String s;
-		bool conversion_ok = true;
-		if (p_arr.size() > 0) {
-			const uint8_t *r = p_arr.ptr();
-			conversion_ok = s.parse_utf8((const char *)r, p_arr.size()) == OK;
-		}
+	String s;
+	bool conversion_ok = true;
+	if (p_arr.size() > 0) {
+		const uint8_t *r = p_arr.ptr();
+		conversion_ok = s.parse_utf8((const char *)r, p_arr.size()) == OK;
+	}
 
-		Array a;
+	Array a;
 
-		a.append(s);
-		a.append(conversion_ok);
+	a.append(s);
+	a.append(conversion_ok);
 
-		return a;
+	return a;
 }

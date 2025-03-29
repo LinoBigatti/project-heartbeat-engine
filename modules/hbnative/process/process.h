@@ -55,13 +55,13 @@ public:
 	int get_available_stderr_lines() const;
 	String get_stdout_line();
 	String get_stderr_line();
-	virtual int get_exit_status() const { return -1; };
-	virtual int get_id() const { return -1; };
-	virtual void kill(bool m_force = false){};
-	virtual bool write(const String &p_input) { return false; };
-	virtual void close_stdin(){};
+	virtual int get_exit_status() const { return -1; }
+	virtual int get_id() const { return -1; }
+	virtual void kill(bool m_force = false) {}
+	virtual bool write(const String &p_input) { return false; }
+	virtual void close_stdin() {}
 
-	virtual ~Process(){};
+	virtual ~Process() {}
 };
 
 #endif // PROCESS_H

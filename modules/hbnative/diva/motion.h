@@ -100,8 +100,9 @@ class DIVAMotion {
 			p_stream->seek(header.key_set_types_offset);
 
 			for (int32_t j = 0, b = 0; j < data.key_set_count; j++) {
-				if (!(j % 8))
+				if (!(j % 8)) {
 					b = p_stream->get_u16();
+				}
 
 				key_set_arr[j].type = (mot_key_set_type)((b >> (j % 8 * 2)) & 0x03);
 			}

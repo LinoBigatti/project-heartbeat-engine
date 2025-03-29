@@ -7,10 +7,10 @@
 #include "core/object/object.h"
 #include "core/object/ref_counted.h"
 #include "core/string/ustring.h"
+#include "miniaudio/miniaudio.h"
 #include "shinobu_clock.h"
 #include "shinobu_group.h"
 #include "shinobu_sound_source.h"
-#include "miniaudio/miniaudio.h"
 
 class Shinobu : public Object {
 	GDCLASS(Shinobu, Object);
@@ -50,7 +50,7 @@ public:
 	ma_engine *get_engine();
 	Error initialize(ma_backend forced_backend);
 	Error godot_initialize();
-	_FORCE_INLINE_ static uint64_t get_inc_sound_source_uid() { return sound_source_uid.postincrement(); };
+	_FORCE_INLINE_ static uint64_t get_inc_sound_source_uid() { return sound_source_uid.postincrement(); }
 
 	Ref<ShinobuSoundSourceMemory> register_sound_from_memory(String m_name_hint, PackedByteArray m_data);
 	Ref<ShinobuGroup> create_group(String m_group_name, Ref<ShinobuGroup> m_parent_group = nullptr);
@@ -74,4 +74,4 @@ public:
 	Shinobu();
 	~Shinobu();
 };
-#endif
+#endif // SHINOBU_H

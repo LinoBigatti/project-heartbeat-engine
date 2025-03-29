@@ -1,5 +1,5 @@
-#ifndef SHINOBU_FFT
-#define SHINOBU_FFT
+#ifndef SHINOBU_FFT_H
+#define SHINOBU_FFT_H
 
 /* Thirdparty code, so disable clang-format with Godot style */
 /* clang-format off */
@@ -60,4 +60,4 @@ static void smbFft(float *fftBuffer, long fftFrameSize, long sign)
 }
 /* clang-format on */
 
-#endif
+#endif // SHINOBU_FFT_H

@@ -2170,15 +2170,15 @@ void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target
 					_calculate_clipping_planes(current_clip->final_clip_rect, p_3d_info, planes);
 					const int write_idx = clip_plane_index + state.last_clipping_plane_index;
 					for (int j = 0; j < 4; j++) {
-						state.clipping_plane_set_array[write_idx].clipping_planes[j*4] = planes[j].normal.x;
-						state.clipping_plane_set_array[write_idx].clipping_planes[j*4+1] = planes[j].normal.y;
-						state.clipping_plane_set_array[write_idx].clipping_planes[j*4+2] = planes[j].normal.z;
-						state.clipping_plane_set_array[write_idx].clipping_planes[j*4+3] = planes[j].d;
+						state.clipping_plane_set_array[write_idx].clipping_planes[j * 4] = planes[j].normal.x;
+						state.clipping_plane_set_array[write_idx].clipping_planes[j * 4 + 1] = planes[j].normal.y;
+						state.clipping_plane_set_array[write_idx].clipping_planes[j * 4 + 2] = planes[j].normal.z;
+						state.clipping_plane_set_array[write_idx].clipping_planes[j * 4 + 3] = planes[j].d;
 					}
 					int curr_clipping_plane_idx = clip_plane_index + state.last_clipping_plane_index;
 					int curr_clipping_plane_buffer_idx = state.current_clipping_plane_buffer_index;
 					_add_clipping_plane(planes, clip_plane_index);
-					
+
 					current_batch->clipping_plane_set_index = curr_clipping_plane_idx;
 					current_batch->clipping_plane_buffer_index = curr_clipping_plane_buffer_idx;
 					current_batch->flags |= BATCH_FLAGS_USE_CLIPPING_PLANES;
@@ -2244,10 +2244,10 @@ void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target
 		}
 		if (clip_plane_index > 0) {
 			RD::get_singleton()->buffer_update(
-				state.canvas_instance_data_buffers[state.current_data_buffer_index].clipping_plane_buffers[state.current_clipping_plane_buffer_index],
-				state.last_clipping_plane_index * sizeof(ClippingPlaneSet),
-				clip_plane_index * sizeof(ClippingPlaneSet),
-				state.clipping_plane_set_array);
+					state.canvas_instance_data_buffers[state.current_data_buffer_index].clipping_plane_buffers[state.current_clipping_plane_buffer_index],
+					state.last_clipping_plane_index * sizeof(ClippingPlaneSet),
+					clip_plane_index * sizeof(ClippingPlaneSet),
+					state.clipping_plane_set_array);
 		}
 	}
 
@@ -2391,7 +2391,6 @@ void RendererCanvasRenderRD::_record_item_commands(const Item *p_item, RenderTar
 	const bool had_plane_clipping = r_current_batch->flags & BATCH_FLAGS_USE_CLIPPING_PLANES;
 	const int base_plane_clipping_buffer_idx = r_current_batch->clipping_plane_buffer_index;
 	const int base_plane_clipping_plane_set_idx = r_current_batch->clipping_plane_set_index;
-
 
 	bool reclip = false;
 
@@ -3340,7 +3339,7 @@ void RendererCanvasRenderRD::_calculate_clipping_planes(Rect2 p_rect, RendererCa
 	for (int i = 0; i < 4; i++) {
 		Vector2 edge_center_2d;
 
-		switch(i) {
+		switch (i) {
 			case 0: {
 				edge_center_2d = p_rect.position + Vector2(0.0, p_rect.size.y * 0.5);
 			} break;

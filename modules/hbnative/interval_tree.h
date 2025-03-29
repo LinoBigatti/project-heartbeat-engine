@@ -1,5 +1,5 @@
-#ifndef INTERVAL_TREE_GD_H
-#define INTERVAL_TREE_GD_H
+#ifndef INTERVAL_TREE_H
+#define INTERVAL_TREE_H
 
 #include "core/object/ref_counted.h"
 #include "core/variant/typed_array.h"
@@ -21,4 +21,4 @@ public:
 	void clear();
 };
 
-#endif // INTERVAL_TREE_GD_H
+#endif // INTERVAL_TREE_H

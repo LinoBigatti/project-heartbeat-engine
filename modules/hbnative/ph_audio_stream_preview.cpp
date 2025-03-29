@@ -36,8 +36,9 @@ float PHAudioStreamPreview::get_length() const {
 	return length;
 }
 float PHAudioStreamPreview::get_max(float p_time, float p_time_next) const {
-	if (length == 0)
+	if (length == 0) {
 		return 0;
+	}
 
 	int max = preview.size() / 2;
 	int time_from = p_time / length * max;
@@ -62,8 +63,9 @@ float PHAudioStreamPreview::get_max(float p_time, float p_time_next) const {
 }
 
 float PHAudioStreamPreview::get_avg(float p_time, float p_time_next) const {
-	if (length == 0)
+	if (length == 0) {
 		return 0;
+	}
 
 	int max = preview.size() / 2;
 	int time_from = p_time / length * max;
@@ -89,8 +91,9 @@ float PHAudioStreamPreview::get_avg(float p_time, float p_time_next) const {
 }
 
 float PHAudioStreamPreview::get_rms(float p_time, float p_time_next) const {
-	if (length == 0)
+	if (length == 0) {
 		return 0;
+	}
 
 	int max = preview.size() / 2;
 	int time_from = p_time / length * max;
@@ -116,8 +119,9 @@ float PHAudioStreamPreview::get_rms(float p_time, float p_time_next) const {
 }
 
 float PHAudioStreamPreview::get_min(float p_time, float p_time_next) const {
-	if (length == 0)
+	if (length == 0) {
 		return 0;
+	}
 
 	int max = preview.size() / 2;
 	int time_from = p_time / length * max;

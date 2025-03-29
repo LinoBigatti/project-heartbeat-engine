@@ -424,7 +424,7 @@ void DIVAObjectSet::read_model(DIVAObject *p_obj, Ref<StreamPeerBuffer> p_spb, u
 
 		queue.position_pop();
 	}
-};
+}
 
 void DIVAObjectSet::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_object_meshes", "object_name"), &DIVAObjectSet::get_object_meshes_bind);

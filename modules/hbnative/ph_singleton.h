@@ -34,4 +34,4 @@ public:
 	PHNative();
 };
 
-#endif
+#endif // PH_SINGLETON_H
