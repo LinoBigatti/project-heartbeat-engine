@@ -620,10 +620,10 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
 
         arch_subdir = "x64" if env["arch"].endswith("64") else "x86"
 
-        env.Append(LIBPATH=[env["sdl_path"] + "/lib/" + arch_subdir])
+        env.Append(LIBPATH=[env["sdl_path"] + "/lib/" + arch_subdir + "/"])
         env.Append(CPPPATH=[env["sdl_path"] + "/include"])
         env.AppendUnique(CPPDEFINES=["SDL_ENABLED"])
-        env.Append(LIBS=["SDL2"])
+        env.Append(LINKFLAGS=["SDL2.lib"])
 
     env.Append(LINKFLAGS=["/NATVIS:platform\\windows\\godot.natvis"])
 

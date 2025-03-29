@@ -111,7 +111,7 @@ if env["d3d12"]:
         for dll in agility_dlls:
             env.Command(
                 target_dir + "/" + dll,
-                env["agility_sdk_path"] + "/build/native/bin/" + agility_arch_subdir + "/" + dll,
+                env["agility_sdk_path"] + "/build/native/bin/" + agility_arch_subdir + dll,
                 Copy("$TARGET", "$SOURCE"),
             )
 
@@ -130,7 +130,7 @@ if env["sdl"]:
         sdl_dll_path = ""
         if env.msvc:
             arch_subdir = "x64" if env["arch"].endswith("64") else "x86"
-            sdl_dll_path = env["sdl_path"] + "/lib/" + arch_subdir + sdl_dll
+            sdl_dll_path = env["sdl_path"] + "/lib/" + arch_subdir + "/" + sdl_dll
         else:
             sdl_dll_path = env["sdl_path"] + "/bin/" + sdl_dll
         env.Command(

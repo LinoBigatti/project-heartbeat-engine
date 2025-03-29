@@ -587,12 +587,11 @@ void RasterizerCanvasGLES3::_render_items(RID p_to_render_target, int p_item_cou
 	GLES3::MaterialStorage *material_storage = GLES3::MaterialStorage::get_singleton();
 
 	if (p_3d_info->use_3d) {
-		StencilWriteGLES3::StencilWriteTransforms transforms = {
-			.canvas = p_3d_info->canvas_transform_3d,
-			.screen = p_3d_info->screen_transform_3d,
-			.view = p_3d_info->view,
-			.projection = p_3d_info->projection
-		};
+		StencilWriteGLES3::StencilWriteTransforms transforms;
+		transforms.canvas = p_3d_info->canvas_transform_3d;
+		transforms.screen = p_3d_info->screen_transform_3d;
+		transforms.view = p_3d_info->view;
+		transforms.projection = p_3d_info->projection;
 		stencil_write.setup_stencil_write(transforms);
 	}
 

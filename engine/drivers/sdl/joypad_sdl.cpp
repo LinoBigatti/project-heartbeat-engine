@@ -36,13 +36,13 @@
 #include "SDL2-so_wrap.h"
 #else
 
-#include "SDL2/SDL.h"
-#include "SDL2/SDL_error.h"
-#include "SDL2/SDL_events.h"
-#include "SDL2/SDL_gamecontroller.h"
-#include "SDL2/SDL_joystick.h"
-#include "SDL2/SDL_main.h"
-#include "SDL2/SDL_rwops.h"
+#include "SDL.h"
+#include "SDL_error.h"
+#include "SDL_events.h"
+#include "SDL_gamecontroller.h"
+#include "SDL_joystick.h"
+#include "SDL_main.h"
+#include "SDL_rwops.h"
 
 #endif
 

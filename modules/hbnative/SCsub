@@ -17,6 +17,10 @@ elif env["platform"] == "windows":
 thirdparty_dir = "thirdparty/"
 thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
 
+if env.msvc:
+    env_hbnative.Append(CXXFLAGS=["/std:c++20"])
+
+
 env_hbnative.Prepend(CPPPATH=[thirdparty_dir])
 if env_hbnative["builtin_libogg"]:
     env_hbnative.Prepend(CPPPATH=["#thirdparty/libogg/"])
