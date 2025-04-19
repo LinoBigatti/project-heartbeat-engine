@@ -28,4 +28,4 @@ public:
 	ShinobuGroup(String m_group_name, Ref<ShinobuGroup> m_parent_group);
 	~ShinobuGroup();
 };
-#endif
+#endif // SHINOBU_GROUP_H

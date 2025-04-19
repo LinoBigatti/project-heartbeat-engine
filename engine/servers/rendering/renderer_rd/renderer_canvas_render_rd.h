@@ -352,7 +352,7 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 
 	struct ClippingPlaneSet {
 		// 4 clipping planes
-		float clipping_planes[4*4];
+		float clipping_planes[4 * 4];
 	};
 
 	struct InstanceData {
@@ -501,7 +501,7 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 	/// be invalidated when the CanvasTexture is updated, such as changing the
 	/// diffuse texture.
 	HashMap<RID, TightLocalVector<RID>> canvas_texture_to_uniform_set;
-	
+
 	struct Batch {
 		// Position in the UBO measured in bytes
 		uint32_t start = 0;
@@ -582,7 +582,6 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 		uint32_t last_clipping_plane_index = 0;
 		InstanceData *instance_data_array = nullptr;
 		ClippingPlaneSet *clipping_plane_set_array = nullptr;
-
 
 		uint32_t max_clipping_plane_sets_per_buffer = 256;
 		uint32_t max_clipping_plane_set_buffer_size = 256 * sizeof(ClippingPlaneSet);

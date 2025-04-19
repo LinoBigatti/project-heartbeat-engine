@@ -52,4 +52,4 @@ public:
 	HBButtonBlurEX();
 };
 
-#endif // PH_BUTTON_EX_H
+#endif // PH_BLUR_CONTROLS_H

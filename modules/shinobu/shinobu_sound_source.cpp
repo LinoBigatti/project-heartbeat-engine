@@ -11,7 +11,7 @@ void ShinobuSoundSource::_bind_methods() {
 
 ShinobuSoundSource::ShinobuSoundSource(String m_name) {
 	name = m_name;
-};
+}
 
 float ShinobuSoundSource::ebur128_get_loudness() {
 	uint64_t start = OS::get_singleton()->get_ticks_usec();
@@ -69,7 +69,7 @@ ShinobuSoundPlayer *ShinobuSoundSource::instantiate(Ref<ShinobuGroup> m_group, b
 	return memnew(ShinobuSoundPlayer(this, m_group, m_use_source_channel_count));
 }
 
-ShinobuSoundSource::~ShinobuSoundSource(){};
+ShinobuSoundSource::~ShinobuSoundSource() {}
 
 Error ShinobuSoundSourceMemory::instantiate_sound(Ref<ShinobuGroup> m_group, bool use_source_channel_count, ma_sound *p_sound) {
 	ma_sound_config config = ma_sound_config_init();

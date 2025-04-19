@@ -1,4 +1,3 @@
-
 #ifndef SHINOBU_SOUND_SOURCE_H
 #define SHINOBU_SOUND_SOURCE_H
 

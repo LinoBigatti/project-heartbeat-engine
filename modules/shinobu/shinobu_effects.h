@@ -76,4 +76,4 @@ public:
 
 VARIANT_ENUM_CAST(ma_spectrum_magnitude_mode);
 
-#endif
+#endif // SHINOBU_EFFECTS_H

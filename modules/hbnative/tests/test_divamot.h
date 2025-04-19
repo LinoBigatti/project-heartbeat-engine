@@ -1,3 +1,5 @@
+#ifndef TEST_DIVAMOT_H
+#define TEST_DIVAMOT_H
 #include "../diva/bone_db.h"
 #include "../diva/item_table.h"
 #include "../diva/motion.h"
@@ -137,3 +139,4 @@ TEST_SUITE("[DIVAMotion]") {
 	}
 }
 } //namespace TestDIVAMOT
+#endif // TEST_DIVAMOT_H

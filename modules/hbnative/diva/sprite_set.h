@@ -141,7 +141,7 @@ public:
 			} break;
 		}
 		return Image::FORMAT_MAX;
-	};
+	}
 	/*static uint32_t get_diva_size(DIVATextureFormat p_format, Size2i p_size) {
 		uint32_t size = p_size.width * p_size.height;
 		switch (p_format) {

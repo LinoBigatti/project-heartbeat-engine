@@ -1,5 +1,5 @@
-#ifndef MULTI_SPIN_BOX
-#define MULTI_SPIN_BOX
+#ifndef MULTI_SPIN_BOX_H
+#define MULTI_SPIN_BOX_H
 
 #include "scene/gui/line_edit.h"
 
@@ -90,4 +90,4 @@ public:
 	MultiSpinBox();
 };
 
-#endif
+#endif // MULTI_SPIN_BOX_H

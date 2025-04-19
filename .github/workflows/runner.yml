@@ -1,0 +1,38 @@
+name: 🔗 GHA
+on: [push, pull_request, merge_group]
+
+concurrency:
+  group: ${{ github.workflow }}|${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # First stage: Only static checks, fast and prevent expensive builds from running.
+
+  # static-checks:
+  #   if: "!vars.DISABLE_GODOT_CI"
+  #   name: 📊 Static checks
+  #   uses: ./.github/workflows/static_checks.yml
+
+  # # Second stage: Run all the builds and some of the tests.
+
+  # android-build:
+  #   name: 🤖 Android
+  #   needs: static-checks
+  #   uses: ./.github/workflows/android_builds.yml
+
+  # ios-build:
+  #   name: 🍏 iOS
+  #   needs: static-checks
+  #   uses: ./.github/workflows/ios_builds.yml
+
+  linux-build:
+    name: 🐧 Linux
+    uses: ./.github/workflows/linux_builds.yml
+
+  windows-build:
+    name: 🏁 Windows
+    uses: ./.github/workflows/windows_builds.yml
+
+  upload-release:
+    needs: [windows-build, linux-build]
+    uses: ./.github/workflows/upload_release.yml

@@ -1,0 +1,110 @@
+name: 🐧 Linux Builds
+on:
+  workflow_call:
+
+# Global Settings
+env:
+  GODOT_CPP_BRANCH: 4.4
+  SCONSFLAGS: separate_debug_symbols="no" debug_symbols="yes"
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  TSAN_OPTIONS: suppressions=${{ github.workspace }}/misc/error_suppressions/tsan.txt
+  UBSAN_OPTIONS: suppressions=${{ github.workspace }}/misc/error_suppressions/ubsan.txt
+
+jobs:
+  build-linux:
+    # Stay one LTS before latest to increase portability of Linux artifacts.
+    runs-on: ubuntu-22.04
+    name: ${{ matrix.name }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Editor (target=editor)
+            cache-name: linux-editor
+            target: editor
+            sconsflags: profile="../misc/build_profiles/editor_debug_linux.py"
+            tests: false
+            # Skip debug symbols, they're way too big with MSVC.
+            bin: ./engine/bin/godot.linuxbsd.editor.x86_64
+            artifact-name: linux-editor
+
+          - name: Template (target=template_release)
+            cache-name: linux-template
+            target: template_release
+            tests: false
+            sconsflags: profile="../misc/build_profiles/production_linux.py"
+            bin: ./engine/bin/godot.linuxbsd.template_release.x86_64
+            artifact-name: linux-engine
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Need newer mesa for lavapipe to work properly.
+      - name: Linux dependencies for tests
+        if: matrix.proj-test
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EB8B81E14DA65431D7504EA8F63F0F2B90935439
+          sudo add-apt-repository "deb https://ppa.launchpadcontent.net/kisak/turtle/ubuntu jammy main"
+          sudo apt-get install -qq mesa-vulkan-drivers
+
+      # TODO: Figure out somehow how to embed this one.
+      - name: wayland-scanner dependency
+        run: |
+          sudo apt-get install libwayland-bin
+
+      - name: Free disk space on runner
+        run: |
+          echo "Disk usage before:" && df -h
+          sudo rm -rf /usr/local/lib/android
+          echo "Disk usage after:" && df -h
+
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Setup Python and SCons
+        if: "!matrix.legacy-scons"
+        uses: ./.github/actions/godot-deps
+
+      - name: Setup Python and SCons (legacy versions)
+        if: matrix.legacy-scons
+        uses: ./.github/actions/godot-deps
+        with:
+          # Sync with Ensure*Version in SConstruct.
+          python-version: 3.8
+          scons-version: 4.0
+      - name: Download windows deps
+        run: |
+          ./get_deps.sh
+      - name: Compilation
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+          platform: linuxbsd
+          target: ${{ matrix.target }}
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Extract debug symbols
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          rustup default stable
+          source $HOME/.cargo/env
+          cargo install dump_syms
+          ~/.cargo/bin/dump_syms ${{ matrix.bin }} > ${{ matrix.bin }}.syms
+          strip ${{ matrix.bin }}
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: ${{ matrix.artifact-name }}

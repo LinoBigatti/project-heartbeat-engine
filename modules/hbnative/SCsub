@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
 # SCsub
 
 Import("env")
@@ -10,20 +12,30 @@ thirdparty_obj = []
 thirdparty_sources = []
 
 if env["platform"] in ["linuxbsd", "macos", "android"]:
-    thirdparty_sources = ["tiny_process_lib/process.cpp", "tiny_process_lib/process_unix.cpp"]
+    thirdparty_sources = [
+        "tiny_process_lib/process.cpp",
+        "tiny_process_lib/process_unix.cpp",
+    ]
 elif env["platform"] == "windows":
-    thirdparty_sources = ["tiny_process_lib/process.cpp", "tiny_process_lib/process_win.cpp"]
+    thirdparty_sources = [
+        "tiny_process_lib/process.cpp",
+        "tiny_process_lib/process_win.cpp",
+    ]
 
 thirdparty_dir = "thirdparty/"
 thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
+
+if env.msvc:
+    env_hbnative.Append(CXXFLAGS=["/std:c++20"])
+else:
+    env_hbnative.Prepend(CCFLAGS="-std=c++20")
+
 
 env_hbnative.Prepend(CPPPATH=[thirdparty_dir])
 if env_hbnative["builtin_libogg"]:
     env_hbnative.Prepend(CPPPATH=["#thirdparty/libogg/"])
 if env_hbnative["builtin_libvorbis"]:
     env_hbnative.Prepend(CPPPATH=["#thirdparty/libvorbis/"])
-
-env_hbnative.Prepend(CCFLAGS="-std=c++20")
 
 env_process = env_modules.Clone()
 env_process.Prepend(CPPPATH=[thirdparty_dir])

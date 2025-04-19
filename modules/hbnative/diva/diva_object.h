@@ -225,7 +225,7 @@ public:
 			meshes.push_back(am);
 		}
 		return meshes;
-	};
+	}
 };
 
 #endif // DIVA_OBJECT_H

@@ -380,4 +380,4 @@ MA_API void ma_pitch_shift_node_uninit(ma_pitch_shift_node *pPitchShiftNode, con
 	ma_node_uninit(pPitchShiftNode, pAllocationCallbacks);
 }
 
-#endif
+#endif // SHINOBU_PITCH_SHIFT_H

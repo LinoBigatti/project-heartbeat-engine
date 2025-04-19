@@ -1,10 +1,10 @@
 #ifndef SHINOBU_SOUND_PLAYER_H
 #define SHINOBU_SOUND_PLAYER_H
 
+#include "miniaudio/miniaudio.h"
 #include "scene/main/node.h"
 #include "shinobu_clock.h"
 #include "shinobu_effects.h"
-#include "miniaudio/miniaudio.h"
 #include <memory>
 
 class ShinobuSoundSource;
@@ -58,4 +58,4 @@ public:
 	~ShinobuSoundPlayer();
 };
 
-#endif
+#endif // SHINOBU_SOUND_PLAYER_H

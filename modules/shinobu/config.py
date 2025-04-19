@@ -10,7 +10,3 @@ def configure(env):
 def can_build(env, platform):
     env.module_add_dependencies("shinobu", ["vorbis"])
     return True
-
-
-def configure(env):
-    pass

@@ -28,9 +28,9 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifdef WINDOWS_ENABLED
 #ifndef PROCESS_WINDOWS_H
 #define PROCESS_WINDOWS_H
+#ifdef WINDOWS_ENABLED
 
 #include "process_tiny_process_lib.h"
 
@@ -44,5 +44,6 @@ protected:
 public:
 	static void make_default();
 };
-#endif // PROCESS_WINDOWS_H
 #endif // WINDOWS_ENABLED
+
+#endif // PROCESS_WINDOWS_H

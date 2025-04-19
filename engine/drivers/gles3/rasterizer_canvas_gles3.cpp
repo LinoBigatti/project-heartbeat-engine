@@ -587,12 +587,11 @@ void RasterizerCanvasGLES3::_render_items(RID p_to_render_target, int p_item_cou
 	GLES3::MaterialStorage *material_storage = GLES3::MaterialStorage::get_singleton();
 
 	if (p_3d_info->use_3d) {
-		StencilWriteGLES3::StencilWriteTransforms transforms = {
-			.canvas = p_3d_info->canvas_transform_3d,
-			.screen = p_3d_info->screen_transform_3d,
-			.view = p_3d_info->view,
-			.projection = p_3d_info->projection
-		};
+		StencilWriteGLES3::StencilWriteTransforms transforms;
+		transforms.canvas = p_3d_info->canvas_transform_3d;
+		transforms.screen = p_3d_info->screen_transform_3d;
+		transforms.view = p_3d_info->view;
+		transforms.projection = p_3d_info->projection;
 		stencil_write.setup_stencil_write(transforms);
 	}
 
@@ -1188,6 +1187,12 @@ void RasterizerCanvasGLES3::_record_item_commands(const Item *p_item, RID p_rend
 					// Reset base data.
 					_update_transform_2d_to_mat2x3(base_transform * draw_transform, state.instance_data_array[r_index].world);
 					_prepare_canvas_texture(state.canvas_instance_batches[state.current_batch_index].tex, state.canvas_instance_batches[state.current_batch_index].filter, state.canvas_instance_batches[state.current_batch_index].repeat, r_index, texpixel_size);
+					state.instance_data_array[r_index].lights[0] = lights[0];
+					state.instance_data_array[r_index].lights[1] = lights[1];
+					state.instance_data_array[r_index].lights[2] = lights[2];
+					state.instance_data_array[r_index].lights[3] = lights[3];
+					state.instance_data_array[r_index].flags = base_flags;
+					state.instance_data_array[r_index].instance_uniforms_ofs = p_item->instance_allocated_shader_uniforms_offset;
 
 					for (uint32_t j = 0; j < 3; j++) {
 						int offset = j == 0 ? 0 : 1;

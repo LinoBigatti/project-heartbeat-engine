@@ -260,4 +260,4 @@ MA_API void ma_spectrum_analyzer_node_uninit(ma_spectrum_analyzer_node *pSpectru
 	ma_node_uninit(pSpectrumNode, pAllocationCallbacks);
 }
 
-#endif
+#endif // SHINOBU_SPECTRUM_ANALYZER_H

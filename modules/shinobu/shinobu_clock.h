@@ -46,4 +46,4 @@ public:
 		use_mix_size_compensation = p_use_mix_size_compensation;
 	}
 };
-#endif
+#endif // SHINOBU_CLOCK_H

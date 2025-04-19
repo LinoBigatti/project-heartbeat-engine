@@ -17,8 +17,9 @@ Size2 MultiSpinBox::get_minimum_size() const {
 
 // Get the minimum and maximum properties
 double *MultiSpinBox::get_range() const {
-	if (inputs.size() == 0)
+	if (inputs.size() == 0) {
 		return NULL;
+	}
 
 	double value = values[0];
 	double *range = (double *)malloc(sizeof(double) * 2);
@@ -37,8 +38,9 @@ double *MultiSpinBox::get_range() const {
 
 String MultiSpinBox::get_range_string() const {
 	double *range = get_range();
-	if (range == NULL)
+	if (range == NULL) {
 		return String();
+	}
 
 	String range_string;
 
@@ -68,8 +70,9 @@ String MultiSpinBox::get_range_string() const {
 
 String MultiSpinBox::get_default_string() const {
 	double *range = get_range();
-	if (range == NULL)
+	if (range == NULL) {
 		return String();
+	}
 
 	String default_string;
 
@@ -82,8 +85,9 @@ String MultiSpinBox::get_default_string() const {
 		}
 	} else {
 		default_string = vformat("note.%s", property_name);
-		if (inner_property_name.size() != 0)
+		if (inner_property_name.size() != 0) {
 			default_string = vformat("%s.%s", default_string, inner_property_name);
+		}
 	}
 
 	free(range);
@@ -92,8 +96,9 @@ String MultiSpinBox::get_default_string() const {
 
 void MultiSpinBox::_text_entered(const String &p_string) {
 	// Safeguard against trying to execute something when we are just showing the values
-	if (p_string == get_range_string())
+	if (p_string == get_range_string()) {
 		return;
+	}
 
 	String error_tooltip = String();
 

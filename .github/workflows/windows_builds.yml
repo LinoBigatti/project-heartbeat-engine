@@ -1,0 +1,80 @@
+name: 🏁 Windows Builds
+on:
+  workflow_call:
+
+# Global Settings
+# SCONS_CACHE for windows must be set in the build environment
+env:
+  SCONSFLAGS: separate_debug_symbols="yes" debug_symbols="yes"
+  SCONS_CACHE_MSVC_CONFIG: true
+
+jobs:
+  build-windows:
+    # Windows 10 with latest image
+    runs-on: windows-latest
+    name: ${{ matrix.name }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Editor (target=editor)
+            cache-name: windows-editor
+            target: editor
+            sconsflags: profile="../misc/build_profiles/editor_debug_windows.py"
+            tests: false
+            # Skip debug symbols, they're way too big with MSVC.
+            bin: ./bin/godot.windows.editor.x86_64.exe
+            compiler: msvc
+            artifact-name: windows-editor
+
+          - name: Template (target=template_release)
+            cache-name: windows-template
+            target: template_release
+            tests: false
+            sconsflags: profile="../misc/build_profiles/production_windows.py"
+            bin: ./bin/godot.windows.template_release.x86_64.exe
+            compiler: msvc
+            artifact-name: windows-engine
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Setup Python and SCons
+        uses: ./.github/actions/godot-deps
+
+      - name: Download windows deps
+        run: |
+          ./get_deps.ps1
+
+      - name: Compilation
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+          platform: windows
+          target: ${{ matrix.target }}
+          tests: ${{ matrix.tests }}
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Prepare artifact
+        if: matrix.compiler == 'msvc'
+        run: |
+          Remove-Item engine/bin/* -Include *.exp,*.lib -Force
+
+      - name: Upload artifact
+        if: matrix.compiler == 'msvc'
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: ${{ matrix.artifact-name }}
