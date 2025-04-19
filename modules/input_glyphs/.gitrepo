@@ -4,9 +4,9 @@
 ; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
 ;
 [subrepo]
-	remote = https://github.com/EIRTeam/EIRTeam.InputGlyphs.git
+	remote = git@github.com:EIRTeam/EIRTeam.InputGlyphs.git
 	branch = master
-	commit = ad8baee2d30329de8dcca5569f29c18690177a5b
-	parent = 47ead62631656ef447bddcba22f25a9ef37a3f13
+	commit = cd5de22203e5686f3b08a32602936a147b9e8ca0
+	parent = bd41680f2420c4e82ff2db5e939b4e31c23e9150
 	method = merge
-	cmdver = 0.4.6
+	cmdver = 0.4.9
