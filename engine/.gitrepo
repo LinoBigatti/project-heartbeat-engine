@@ -4,9 +4,9 @@
 ; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
 ;
 [subrepo]
-	remote = https://github.com/EIRTeam/shinobu.git
+	remote = git@github.com:EIRTeam/shinobu.git
 	branch = ph
-	commit = 0281559e1d73d9622b0c5ac8452a54743ee9188b
-	parent = f38f839b42e2935488a59384371cafea85a75ed0
+	commit = 3e0bfd114fe8d2411dfdf331c89c986ed78691b0
+	parent = 3f4c81ad6ce902268a3e7b2584f722a67b63dd0e
 	method = merge
-	cmdver = 0.4.6
+	cmdver = 0.4.9
