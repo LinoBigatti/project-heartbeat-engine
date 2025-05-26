@@ -36,7 +36,15 @@ jobs:
             bin: ./bin/godot.windows.template_release.x86_64.exe
             compiler: msvc
             artifact-name: windows-engine
-
+            
+          - name: Template (target=template_debug)
+            cache-name: windows-template-debug
+            target: template_debug
+            tests: false
+            sconsflags: profile="../misc/build_profiles/production_debug_windows.py"
+            bin: ./bin/godot.windows.template_debug.x86_64.exe
+            compiler: msvc
+            artifact-name: windows-engine-debug
     steps:
       - name: Checkout
         uses: actions/checkout@v4
