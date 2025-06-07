@@ -6,6 +6,8 @@ rm -rf retail_bin
 mkdir -p retail_bin
 cd retail_bin
 
+wget -N https://github.com/EIRTeam/Project-Heartbeat-Engine/releases/download/latest/windows-engine-debug.zip
+unzip windows-engine-debug
 wget -N https://github.com/EIRTeam/Project-Heartbeat-Engine/releases/download/latest/windows-editor.zip
 unzip windows-editor
 wget -N https://github.com/EIRTeam/Project-Heartbeat-Engine/releases/download/latest/windows-engine.zip
