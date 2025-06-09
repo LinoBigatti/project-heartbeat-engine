@@ -758,7 +758,7 @@ void RendererCanvasRenderRD::canvas_render_items(RID p_to_render_target, Item *p
 	bool skip_item = false;
 
 	state.last_instance_index = 0;
-	state.last_clipping_plane_index = 0;
+	state.written_clipping_planes = 0;
 
 	bool update_skeletons = false;
 	bool time_used = false;
@@ -2233,28 +2233,29 @@ void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target
 	// Clipping planes
 
 	if (p_3d_info->use_3d) {
-		uint32_t clip_plane_index = 0;
+		const uint32_t initial_clipping_plane_idx = state.written_clipping_planes;
+		uint32_t last_written_clipping_plane_idx = initial_clipping_plane_idx;
 		uint32_t curr_clipping_plane_idx_in_buffer = 0;
 		uint32_t curr_clipping_plane_buffer_idx = 0;
-
 		Item *current_clip = nullptr;
-		for (int i = 0; i < state.canvas_instance_batches.size(); i++) {
+		for (uint32_t i = 0; i < state.canvas_instance_batches.size(); i++) {
 			RendererCanvasRenderRD::Batch *batch = &state.canvas_instance_batches[i];
 			if (batch->clip != current_clip) {
 				current_clip = batch->clip;
 				if (current_clip) {
 					Plane planes[4];
 					_calculate_clipping_planes(current_clip->final_clip_rect, p_3d_info, planes);
-					const int write_idx = clip_plane_index + state.last_clipping_plane_index;
+					const int write_idx = last_written_clipping_plane_idx++;
 					for (int j = 0; j < 4; j++) {
 						state.clipping_plane_set_array[write_idx].clipping_planes[j * 4] = planes[j].normal.x;
 						state.clipping_plane_set_array[write_idx].clipping_planes[j * 4 + 1] = planes[j].normal.y;
 						state.clipping_plane_set_array[write_idx].clipping_planes[j * 4 + 2] = planes[j].normal.z;
 						state.clipping_plane_set_array[write_idx].clipping_planes[j * 4 + 3] = planes[j].d;
 					}
-					curr_clipping_plane_idx_in_buffer = clip_plane_index + state.last_clipping_plane_index;
+					curr_clipping_plane_idx_in_buffer = write_idx;
 					curr_clipping_plane_buffer_idx = state.current_clipping_plane_buffer_index;
-					_add_clipping_plane(planes, clip_plane_index);
+					// PH TODO: Add back multi clipping plane buffer support
+					//_add_clipping_plane(planes, clip_plane_subindex);
 				}
 			}
 
@@ -2264,14 +2265,13 @@ void RendererCanvasRenderRD::_render_batch_items(RenderTarget p_to_render_target
 				batch->flags |= BATCH_FLAGS_USE_CLIPPING_PLANES;
 			}
 		}
-		if (clip_plane_index > 0) {
+		if (last_written_clipping_plane_idx != initial_clipping_plane_idx) {
 			RD::get_singleton()->buffer_update(
 					state.canvas_instance_data_buffers[state.current_data_buffer_index].clipping_plane_buffers[state.current_clipping_plane_buffer_index],
-					state.last_clipping_plane_index * sizeof(ClippingPlaneSet),
-					clip_plane_index * sizeof(ClippingPlaneSet),
+					initial_clipping_plane_idx * sizeof(ClippingPlaneSet),
+					(last_written_clipping_plane_idx - initial_clipping_plane_idx) * sizeof(ClippingPlaneSet),
 					state.clipping_plane_set_array);
 		}
-		state.last_clipping_plane_index += clip_plane_index;
 	}
 
 	if (state.canvas_instance_batches.is_empty()) {
@@ -3385,8 +3385,8 @@ void RendererCanvasRenderRD::_calculate_clipping_planes(Rect2 p_rect, RendererCa
 }
 
 void RendererCanvasRenderRD::_add_clipping_plane(Plane world_planes[4], uint32_t &r_index) {
-	r_index++;
-	if (r_index + state.last_clipping_plane_index >= state.max_clipping_plane_sets_per_buffer) {
+	//r_index++;
+	/*if (r_index + state.last_clipping_plane_index >= state.max_clipping_plane_sets_per_buffer) {
 		// Copy over all data needed for rendering right away
 		// then go back to recording item commands.
 		RD::get_singleton()->buffer_update(
@@ -3397,7 +3397,7 @@ void RendererCanvasRenderRD::_add_clipping_plane(Plane world_planes[4], uint32_t
 		_allocate_clipping_plane_set_buffer();
 		r_index = 0;
 		state.last_clipping_plane_index = 0;
-	}
+	}*/
 }
 
 void RendererCanvasRenderRD::_prepare_batch_texture_info(RID p_texture, TextureState &p_state, TextureInfo *p_info) {

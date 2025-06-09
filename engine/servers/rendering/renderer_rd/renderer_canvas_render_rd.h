@@ -579,7 +579,7 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 
 		uint32_t current_batch_index = 0;
 		uint32_t last_instance_index = 0;
-		uint32_t last_clipping_plane_index = 0;
+		uint32_t written_clipping_planes = 0;
 		InstanceData *instance_data_array = nullptr;
 		ClippingPlaneSet *clipping_plane_set_array = nullptr;
 
