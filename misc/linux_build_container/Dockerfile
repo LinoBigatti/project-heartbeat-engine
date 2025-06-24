@@ -1,7 +1,14 @@
 # syntax=docker/dockerfile:1
 FROM ubuntu:22.04
 WORKDIR .
+
 RUN apt-get update -y
+RUN apt-get install -y software-properties-common 
+
+RUN add-apt-repository -y ppa:ubuntuhandbook1/ffmpeg6
+
+RUN apt-get update -y
+
 RUN apt-get install -y \
   build-essential \
   scons \
@@ -19,7 +26,9 @@ RUN apt-get install -y \
   libwayland-dev \
   python3 \
   python3-pip \
+  ffmpeg \
   mingw-w64
+
 RUN pip3 install scons
 
 CMD ["/engine_src/misc/linux_build_container/build.sh"]
